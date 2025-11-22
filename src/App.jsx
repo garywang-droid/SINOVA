@@ -13,7 +13,7 @@ import {
   RotateCcw, Hourglass, Lock, Trash2, Save, X, Zap,
   Briefcase, Flame, History, ArrowUpRight, Layers,
   BarChart3, AlertCircle, Loader2, ChevronDown, ChevronUp,
-  ScrollText, Gauge, Ban
+  ScrollText, Gauge
 } from 'lucide-react';
 
 // --- Firebase Config ---
@@ -33,57 +33,66 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 // --- CONSTANTS ---
 const ROLES = ['FOUNDER', 'XJ', 'ST', 'TC', 'QH', 'LE', 'ZC', 'ALL'];
 
-// --- WORKFLOW DNA ---
+// --- WORKFLOW DNA (Strictly Adjusted) ---
 const WORKFLOW_TEMPLATE = [
-  // Phase 1: Launch
+  // === Phase 1: Launch ===
   { code: 'L-01', name: '确认签约', role: 'XJ', phase: '签约启动', desc: '看板客户卡片建立', sla: 24, type: 'once', track: 1 },
   { code: 'L-02', name: '合同收集', role: 'ST', phase: '签约启动', desc: '建立Excel/发票/归档', prev: 'L-01', sla: 48, type: 'once', track: 1 },
   { code: 'L-03', name: '建立工作空间', role: 'TC', phase: '签约启动', desc: '拉群/建文件夹', prev: 'L-01', sla: 4, type: 'once', track: 1 },
   { code: 'L-04', name: '客户资料归档', role: 'TC', phase: '签约启动', desc: '资料清单入云盘', prev: 'L-03', sla: 24, type: 'once', track: 1 },
-  // Phase 2
+
+  // === Phase 2: Market Targeting ===
   { code: 'MT-01', name: 'AI市场初筛', role: 'TC', phase: '市场定位', desc: '输出初筛报告', prev: 'L-04', sla: 12, type: 'once', track: 1 },
   { code: 'MT-02', name: '会前准备', role: 'XJ', phase: '市场定位', desc: '会议资料(PPT/视频)', prev: 'MT-01', sla: 4, type: 'once', track: 1 },
   { code: 'MT-03', name: '战略决策会', role: 'QH', phase: '市场定位', desc: '确认主攻国', prev: 'MT-02', sla: 2, type: 'once', track: 1 },
   { code: 'MT-04', name: '目标国深度调研', role: 'TC', phase: '市场定位', desc: '深度报告+穿刺名单V1.0', prev: 'MT-03', sla: 72, type: 'once', track: 1 },
-  // Phase 3
+
+  // === Phase 3: Localization ===
   { code: 'LB-01', name: '品牌小广告', role: 'XJ', phase: '在地化基建', desc: '输出小卡片', prev: 'MT-03', sla: 24, type: 'once', track: 1 },
   { code: 'LB-02', name: '品牌改造方案', role: 'XJ', phase: '在地化基建', desc: '解决方案文档', prev: 'MT-03', sla: 48, type: 'once', track: 1 },
+  
+  // FIX: ZC Whitepaper (LB-03) starts after TC Research (MT-04)
   { code: 'LB-03', name: '转化白皮书', role: 'ZC', phase: '在地化基建', desc: '制作白皮书', prev: 'MT-04', sla: 72, type: 'once', track: 1 },
+  
   { code: 'LB-04', name: '卫星站点搭建', role: 'XJ', phase: '在地化基建', desc: '上线站点链接&SEO', prev: 'LB-02', sla: 72, type: 'once', track: 1 },
   { code: 'LB-06', name: '宣传视频制作', role: 'LE', phase: '在地化基建', desc: '数字人视频x2', prev: 'LB-02', sla: 96, type: 'once', track: 1 },
   { code: 'LB-05', name: '智能客服搭建', role: 'QH', phase: '在地化基建', desc: 'AI客服配置', prev: 'LB-04', sla: 24, type: 'once', track: 1 },
   { code: 'LB-07', name: '素材转化', role: 'ZC', phase: '在地化基建', desc: '社媒内容库初始化', prev: 'LB-02', sla: 48, type: 'once', track: 1 },
   { code: 'LB-08', name: '基建核心审核', role: 'QH', phase: '在地化基建', desc: '最终版交付物审核', prev: ['LB-05', 'LB-06', 'LB-07'], sla: 24, type: 'once', track: 1 },
-  // Phase 4
+
+  // === Phase 4: Market Penetration ===
+  // All Outreach starts after MT-04 (List Ready)
   { code: 'MP-01', name: '高潜名单触达', role: 'TC', phase: '市场渗透', desc: '每日筛选与触达', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
   { code: 'MP-02', name: '穿刺联系方式', role: 'ST', phase: '市场渗透', desc: '完善客户数据表', prev: 'MT-04', sla: 48, type: 'continuous', track: 1 },
-  // ST Bulk Outreach
   { code: 'MP-03', name: '批量触达(领英)', role: 'ST', phase: '市场渗透', desc: '每日触达/多号操作', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
   
+  // FIX: LE SINOVA Outreach - Continuous, after MT-04
   { code: 'MP-04', name: 'SINOVA批量触达', role: 'LE', phase: '市场渗透', desc: '每日SINOVA账号触达', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
-  { code: 'MP-05', name: '邮件阵地触达', role: 'ZC', phase: '市场渗透', desc: '每周邮件营销', prev: 'MT-04', sla: 168, type: 'weekly', track: 1 }, 
+  
+  // FIX: ZC Email - Weekly, after LB-03 (Whitepaper ready)
+  { code: 'MP-05', name: '邮件阵地触达', role: 'ZC', phase: '市场渗透', desc: '每周邮件营销', prev: 'LB-03', sla: 168, type: 'weekly', track: 1 }, 
+  
   { code: 'MP-CONTENT', name: '社媒素材转化', role: 'ZC', phase: '市场渗透', desc: '周一三五转化素材', prev: 'LB-07', sla: 24, type: 'mwf', track: 1 }, 
   { code: 'MP-06', name: '发布社媒动态', role: 'ALL', phase: '市场渗透', desc: '周一三五全员发布', prev: 'MP-CONTENT', sla: 24, type: 'mwf', track: 1 },
   { code: 'MP-07', name: '多渠道运营', role: 'ZC', phase: '市场渗透', desc: 'FB/Ins运营节点', prev: 'LB-07', sla: 48, type: 'weekly', track: 1 },
-  // Phase 5
+
+  // === Phase 5: Lead ===
   { code: 'LO-01', name: '线索登记(MQL)', role: 'XJ', phase: '线索转化', desc: '更新CRM/概率表', prev: 'MP-03', sla: 24, type: 'continuous', track: 1 },
   { code: 'LO-02', name: 'MQL初步互动', role: 'TC', phase: '线索转化', desc: '互动记录', prev: 'LO-01', sla: 24, type: 'continuous', track: 1 },
   { code: 'LO-03', name: '升级SQL指派', role: 'XJ', phase: '线索转化', desc: '@QH指派通知', prev: 'LO-02', sla: 4, type: 'once', track: 1 },
   { code: 'LO-04', name: '推进商机', role: 'QH', phase: '线索转化', desc: 'CRM商机阶段更新', prev: 'LO-03', sla: 168, type: 'weekly', track: 1 },
 ];
 
-// Track 2: Nurture (The "Silent Loop")
-// Role is dynamic (inherited from TC/ST)
+// Track 2: Nurture Loop
 const TRACK_2_NURTURE_TEMPLATE = [
   { code: 'N-LOOP-02', name: '第2轮：发送解决方案', phase: '静默激活', desc: '向目标群组发送《解决方案》', sla: 24, type: 'continuous', track: 2, round: 2 },
   { code: 'N-LOOP-03', name: '第3轮：发送讲解视频', phase: '静默激活', desc: '发送视频内容', prev: 'N-LOOP-02', sla: 168, type: 'continuous', track: 2, round: 3 }, 
   { code: 'N-LOOP-04', name: '第4轮：发送白皮书', phase: '静默激活', desc: '发送白皮书并引导下载', prev: 'N-LOOP-03', sla: 168, type: 'continuous', track: 2, round: 4 },
   { code: 'N-LOOP-05', name: '第5轮：最终全景激活', phase: '静默激活', desc: '发送SINOVAlink全景方案+阵亡分析', prev: 'N-LOOP-04', sla: 168, type: 'continuous', track: 2, round: 5 },
-  // 60-Day Recheck (Once) - Reminds them to check back later
   { code: 'N-LOOP-RECHECK', name: '60天后：静默客户回捞', phase: '静默激活', desc: '检查是否有新的回关或意向', prev: 'N-LOOP-05', sla: 1440, type: 'once', track: 2, round: 6 }, 
 ];
 
-// Track 2: Strike (High Intent)
+// Track 2: Strike
 const TRACK_2_STRIKE_TEMPLATE = [
   { code: 'S-LOOP-01', name: '识别重点攻坚', role: 'QH', phase: '重点攻坚', desc: 'CRM标记攻坚目标', sla: 48, type: 'once', track: 2, round: 99 },
   { code: 'S-LOOP-02', name: '定制轻方案', role: 'ZC', phase: '重点攻坚', desc: '针对性PPT/PDF', prev: 'S-LOOP-01', sla: 48, type: 'once', track: 2, round: 99 },
@@ -117,7 +126,6 @@ const getSlaDuration = (baseSlaHours, pressureMode) => {
   return baseSlaHours * modifier * 3600000;
 };
 
-// --- MAIN APP ---
 export default function App() {
   const [user, setUser] = useState(null);
   const [currentRole, setCurrentRole] = useState('XJ');
@@ -125,12 +133,15 @@ export default function App() {
   const [clients, setClients] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  
   const [pressureMode, setPressureMode] = useState(false);
   const [processingTasks, setProcessingTasks] = useState({});
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [taskFilter, setTaskFilter] = useState('priority'); 
+  const [expandedGroups, setExpandedGroups] = useState({});
+
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
   const [logModal, setLogModal] = useState({ show: false, task: null, content: '' });
   const [leadModal, setLeadModal] = useState({ show: false, task: null, clientName: '', clientId: '', contact: '', note: '' });
@@ -175,11 +186,7 @@ export default function App() {
     const batch = writeBatch(db);
 
     batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId), {
-      name: newClientName,
-      createdAt: serverTimestamp(),
-      status: 'active',
-      progress: 0,
-      currentRound: 1
+      name: newClientName, createdAt: serverTimestamp(), status: 'active', progress: 0, currentRound: 1, startWeek: serverTimestamp()
     });
 
     const starters = WORKFLOW_TEMPLATE.filter(t => !t.prev);
@@ -208,11 +215,9 @@ export default function App() {
     ];
 
     nextSteps.forEach(nextT => {
-      // --- ROLE GUARD: XJ cannot inherit Nurture tasks ---
       const targetRole = nextT.track === 2 ? completedTask.role : nextT.role;
-      if (nextT.track === 2 && targetRole === 'XJ') return; // BLOCK XJ from Nurture
+      if (nextT.track === 2 && targetRole === 'XJ') return; 
 
-      // --- DUPE CHECK ---
       const uniqueCode = nextT.track === 2 ? `${nextT.code}-${targetRole}` : nextT.code;
       if (existingTasks.find(t => t.code === nextT.code && (nextT.track === 2 ? t.role === targetRole : true))) return;
 
@@ -230,12 +235,10 @@ export default function App() {
         const now = new Date();
         const duration = nextT.sla === 1440 ? (60 * 24 * 3600000) : getSlaDuration(nextT.sla, pressureMode);
         batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
-          ...nextT, 
-          role: targetRole, // Inherit if Nurture
-          clientId: completedTask.clientId, clientName: completedTask.clientName,
+          ...nextT, role: targetRole, clientId: completedTask.clientId, clientName: completedTask.clientName,
           status: 'pending', isReady: true, createdAt: serverTimestamp(),
           dueDate: new Date(now.getTime() + duration), logs: [],
-          originalCode: nextT.code, // Keep ref for chaining
+          originalCode: nextT.code,
           name: nextT.track === 2 ? `${nextT.name} (${targetRole}线)` : nextT.name
         });
       }
@@ -243,18 +246,13 @@ export default function App() {
   };
 
   const activateNurtureLoop = (clientName, clientId, batch, role) => {
-    // --- ROLE GUARD: XJ cannot start Nurture ---
     if (role === 'XJ') return;
-
     const startNode = TRACK_2_NURTURE_TEMPLATE[0];
     const taskId = `${clientId}-${startNode.code}-${role}`;
     batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
-      ...startNode, 
-      role: role, 
-      clientId, clientName, status: 'pending', isReady: true,
+      ...startNode, role: role, clientId, clientName, status: 'pending', isReady: true,
       createdAt: serverTimestamp(), dueDate: getNextDueDate('daily'), logs: [],
-      originalCode: startNode.code,
-      name: `${startNode.name} (${role}线)`
+      originalCode: startNode.code, name: `${startNode.name} (${role}线)`
     });
     batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId), { currentRound: 2, nurtureActive: true });
   };
@@ -312,7 +310,6 @@ export default function App() {
     const { clientName, clientId, contact, note, task } = leadModal;
     if (!contact || !note) return alert("请填写完整商机信息");
     const batch = writeBatch(db);
-    
     TRACK_2_STRIKE_TEMPLATE.forEach(t => {
       const taskId = `${clientId}-${t.code}-${Date.now()}`; 
       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
@@ -321,13 +318,10 @@ export default function App() {
         context: { contact, note, sourceRole: currentRole, sourceUser: user.uid, sourceTask: task?.name } 
       });
     });
-
     if (task) {
       const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
       batch.update(taskRef, {
-        logs: [...(task.logs || []), { 
-          text: `🔥 发现商机! 目标: ${contact} | 需求: ${note}`, type: 'lead', user: user.uid, userRole: currentRole, clientName, taskName: task.name, at: new Date().toISOString() 
-        }]
+        logs: [...(task.logs || []), { text: `🔥 发现商机! 目标: ${contact} | 需求: ${note}`, type: 'lead', user: user.uid, userRole: currentRole, clientName, taskName: task.name, at: new Date().toISOString() }]
       });
     }
     batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId), { track2Active: true });
@@ -363,22 +357,6 @@ export default function App() {
   const requestUndo = (task) => setConfirmModal({ show: true, title: "撤回任务?", message: "恢复为待办。", onConfirm: () => submitUndo(task) });
   const openLeadModal = (task) => setLeadModal({ show: true, task, clientName: task.clientName, clientId: task.clientId, contact: '', note: '' });
 
-  const generateInternalTasks = async () => {
-    const batch = writeBatch(db);
-    const clientId = 'INTERNAL_OPS';
-    TRACK_3_TEMPLATE.forEach(t => {
-      const taskId = `${clientId}-${t.code}`;
-      if (!tasks.find(x => x.id === taskId)) {
-        batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
-          ...t, clientId, clientName: '🏢 公司内部建设', status: 'pending', isReady: true,
-          createdAt: serverTimestamp(), dueDate: getNextDueDate(t.type), logs: []
-        });
-      }
-    });
-    await batch.commit();
-    showToast("🏢 内部任务已刷新");
-  };
-
   const renderTaskItem = (task) => {
     const isRecurring = ['continuous', 'daily', 'weekly', 'mwf'].includes(task.type);
     const dueDate = task.dueDate ? new Date(task.dueDate.seconds * 1000) : null;
@@ -390,9 +368,7 @@ export default function App() {
     return (
       <div key={task.id} className={`bg-white p-4 border-b border-slate-50 hover:bg-slate-50 transition-all flex items-start gap-4 group ${isOverdue && !isCompleted ? 'bg-red-50/30' : ''}`}>
         <div className="pt-1">
-          {isCompleted ? (
-            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><CheckSquare size={16} /></div>
-          ) : (
+          {isCompleted ? <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><CheckSquare size={16} /></div> : (
             <div className="flex flex-col gap-2">
               {isRecurring && (
                 <button onClick={() => setLogModal({ show: true, task, content: '' })} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100" title="打卡"><FileText size={14}/></button>
@@ -406,25 +382,15 @@ export default function App() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-xs font-bold text-slate-400">{task.code}</span>
-            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">{task.clientName}</span>
-            {task.prev && !isCompleted && <span className="text-[10px] text-blue-400 bg-blue-50 px-1.5 py-0.5 rounded flex items-center"><ArrowUpRight size={10} className="mr-1"/> 承接上游</span>}
             {isOverdue && !isCompleted && <span className="text-xs text-red-500 font-bold flex items-center"><AlertTriangle size={10} className="mr-1"/> 逾期</span>}
             {task.track === 2 && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded flex items-center"><Zap size={8} className="mr-1"/> 攻坚</span>}
             {task.round && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">第{task.round}轮</span>}
           </div>
           <h3 className={`font-bold text-sm text-slate-800 ${isCompleted ? 'line-through text-slate-400' : ''}`}>{task.name}</h3>
           <p className="text-xs text-slate-500 mt-0.5">{task.desc}</p>
-          {context && (
-            <div className="mt-2 text-xs bg-purple-50 border border-purple-100 text-purple-800 p-2 rounded">
-              <div className="font-bold flex items-center gap-1 mb-1"><Flame size={12}/> 线索来源: {context.sourceRole} ({context.sourceTask})</div>
-              <div>🎯 目标: {context.contact}</div>
-              <div className="mt-1">📝 备注: {context.note}</div>
-            </div>
-          )}
+          {context && <div className="mt-2 text-xs bg-purple-50 border border-purple-100 text-purple-800 p-2 rounded"><div className="font-bold flex items-center gap-1 mb-1"><Flame size={12}/> 线索来源: {context.sourceRole} ({context.sourceTask})</div><div>🎯 目标: {context.contact}</div><div className="mt-1">📝 备注: {context.note}</div></div>}
           {!isCompleted && (task.phase === '市场渗透' || task.phase === '线索转化' || task.phase === '静默激活') && (
-            <button onClick={() => openLeadModal(task)} className="mt-2 text-[10px] flex items-center gap-1 text-purple-600 border border-purple-100 px-2 py-0.5 rounded hover:bg-purple-50 transition-colors">
-              <Flame size={10}/> 发现商机
-            </button>
+            <button onClick={() => openLeadModal(task)} className="mt-2 text-[10px] flex items-center gap-1 text-purple-600 border border-purple-100 px-2 py-0.5 rounded hover:bg-purple-50 transition-colors"><Flame size={10}/> 发现商机</button>
           )}
         </div>
         <div className="text-right text-xs text-slate-400 pt-1 min-w-[80px]">
@@ -435,8 +401,48 @@ export default function App() {
     );
   };
 
+  // --- GROUPED TASK RENDER (V28.1 RESTORED) ---
+  const renderGroupedTasks = (filtered) => {
+    const groups = filtered.reduce((acc, task) => {
+      const key = task.clientName || '其他';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(task);
+      return acc;
+    }, {});
+    const sortedGroups = Object.entries(groups).sort(([nameA, tasksA], [nameB, tasksB]) => {
+      const hasOverdueA = tasksA.some(t => t.dueDate && new Date(t.dueDate.seconds*1000) < new Date());
+      const hasOverdueB = tasksB.some(t => t.dueDate && new Date(t.dueDate.seconds*1000) < new Date());
+      if (hasOverdueA && !hasOverdueB) return -1;
+      if (!hasOverdueA && hasOverdueB) return 1;
+      return 0;
+    });
+    return sortedGroups.map(([clientName, clientTasks]) => {
+      const hasOverdue = clientTasks.some(t => t.dueDate && new Date(t.dueDate.seconds*1000) < new Date());
+      const isExpanded = expandedGroups[clientName] ?? (hasOverdue || taskFilter === 'priority' || taskFilter === 'track2');
+      return (
+        <div key={clientName} className={`bg-white rounded-xl border shadow-sm overflow-hidden mb-4 ${hasOverdue ? 'border-red-200' : 'border-slate-200'}`}>
+          <div className={`px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 ${hasOverdue ? 'bg-red-50' : 'bg-slate-50'}`} onClick={() => setExpandedGroups(prev => ({ ...prev, [clientName]: !isExpanded }))}>
+            <div className="font-bold text-slate-700 flex items-center gap-2">
+              {isExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
+              <Users size={16} className={hasOverdue ? 'text-red-500' : 'text-slate-400'}/>
+              {clientName}
+              <span className="text-xs font-normal text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">{clientTasks.length}</span>
+            </div>
+            {hasOverdue && <span className="text-xs text-red-600 font-bold flex items-center"><AlertCircle size={12} className="mr-1"/> 需关注</span>}
+          </div>
+          {isExpanded && <div>{clientTasks.map(task => renderTaskItem(task))}</div>}
+        </div>
+      );
+    });
+  };
+
   const filteredTasks = useMemo(() => {
-    let list = tasks.filter(t => t.role === currentRole || currentRole === 'ALL' || t.role === 'ALL' || currentRole === 'FOUNDER');
+    // FIX: RESTRICT XJ TO ONLY SEE XJ TASKS
+    let list = tasks.filter(t => {
+      if (currentRole === 'FOUNDER' || currentRole === 'ALL') return true;
+      return t.role === currentRole || t.role === 'ALL';
+    });
+    
     list = list.filter(t => activeTab === 'completed' ? t.status === 'completed' : t.status !== 'completed');
     if (taskFilter === 'urgent' && activeTab !== 'completed') {
       const today = new Date(); today.setHours(23,59,59,999);
@@ -454,7 +460,7 @@ export default function App() {
       <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen fixed left-0 top-0 z-10 shadow-xl">
         <div className="p-6 border-b border-slate-800">
           <h1 className="text-lg font-bold text-white flex items-center gap-2"><Activity className="text-blue-500"/> 粤新链·指挥台</h1>
-          <p className="text-[10px] mt-1 text-slate-500">V27.0 终极稳定版</p>
+          <p className="text-[10px] mt-1 text-slate-500">V30.0 完美秩序版</p>
           <div className={`mt-4 p-2 rounded flex items-center gap-2 text-xs font-bold ${pressureMode ? 'bg-red-900/50 text-red-400 animate-pulse' : 'bg-slate-800 text-emerald-400'}`}>
             <Gauge size={14}/> {pressureMode ? '高压模式' : '系统负载正常'}
           </div>
@@ -487,8 +493,8 @@ export default function App() {
         {(activeTab === 'my-tasks' || activeTab === 'completed') && (
           <div className="max-w-5xl mx-auto space-y-4">
             <header className="mb-4 flex justify-between items-center"><h2 className="text-xl font-bold text-slate-800">{activeTab === 'completed' ? '已归档任务' : '待办流水线'}</h2><div className="flex gap-1 bg-slate-100 p-1 rounded"><button onClick={() => setTaskFilter('priority')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'priority' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}>全部</button><button onClick={() => setTaskFilter('urgent')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'urgent' ? 'bg-white shadow text-red-600' : 'text-slate-500'}`}>急件</button><button onClick={() => setTaskFilter('track2')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'track2' ? 'bg-white shadow text-purple-600' : 'text-slate-500'}`}>攻坚</button></div></header>
-            <div className="space-y-3">{filteredTasks.map(task => renderTaskItem(task))}</div>
-            {filteredTasks.length === 0 && <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">暂无任务</div>}
+            {/* V28.1 GROUPED RENDER RESTORED */}
+            {renderGroupedTasks(filteredTasks)}
           </div>
         )}
         {activeTab === 'clients' && <div className="max-w-5xl mx-auto space-y-6"><header className="flex justify-between items-center"><h2 className="text-2xl font-bold">客户全景</h2><button onClick={() => setShowNewClientModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded shadow"><Plus size={18}/> 新签约</button></header><div className="grid gap-4">{clients.map(c => <div key={c.id} className="bg-white p-6 rounded-xl border shadow-sm"><div className="flex justify-between"><h3 className="font-bold">{c.name}</h3><div className="text-xs text-slate-400">入池 {Math.ceil((new Date()-new Date(c.startWeek?.seconds*1000))/(604800000))} 周</div></div><div className="flex gap-2 mt-1 text-xs"><span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Round: {c.currentRound || 1}</span></div><div className="w-full h-2 bg-slate-100 rounded mt-2"><div className="h-full bg-blue-500" style={{width: `${c.progress}%`}}></div></div></div>)}</div></div>}
