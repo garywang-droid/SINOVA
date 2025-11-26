@@ -13,7 +13,7 @@ import {
   RotateCcw, Hourglass, Lock, Trash2, Save, X, Zap,
   Briefcase, Flame, History, ArrowUpRight, Layers,
   BarChart3, AlertCircle, Loader2, ChevronDown, ChevronUp,
-  ScrollText, Gauge
+  ScrollText, Gauge, Globe, Flag, Calendar
 } from 'lucide-react';
 
 // --- Firebase Config ---
@@ -25,6 +25,8 @@ const firebaseConfig = {
   messagingSenderId: "535670397178",
   appId: "1:535670397178:web:24caa2e735644621419143"
 };
+const firebaseConfig = JSON.parse(__firebase_config);
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -33,7 +35,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 // --- CONSTANTS ---
 const ROLES = ['FOUNDER', 'XJ', 'ST', 'TC', 'QH', 'LE', 'ZC', 'ALL'];
 
-// --- WORKFLOW DNA (Strictly Adjusted) ---
+// --- WORKFLOW DNA (V40.0 Final Architecture) ---
 const WORKFLOW_TEMPLATE = [
   // === Phase 1: Launch ===
   { code: 'L-01', name: '确认签约', role: 'XJ', phase: '签约启动', desc: '看板客户卡片建立', sla: 24, type: 'once', track: 1 },
@@ -44,37 +46,46 @@ const WORKFLOW_TEMPLATE = [
   // === Phase 2: Market Targeting ===
   { code: 'MT-01', name: 'AI市场初筛', role: 'TC', phase: '市场定位', desc: '输出初筛报告', prev: 'L-04', sla: 12, type: 'once', track: 1 },
   { code: 'MT-02', name: '会前准备', role: 'XJ', phase: '市场定位', desc: '会议资料(PPT/视频)', prev: 'MT-01', sla: 4, type: 'once', track: 1 },
-  { code: 'MT-03', name: '战略决策会', role: 'QH', phase: '市场定位', desc: '确认主攻国', prev: 'MT-02', sla: 2, type: 'once', track: 1 },
-  { code: 'MT-04', name: '目标国深度调研', role: 'TC', phase: '市场定位', desc: '深度报告+穿刺名单V1.0', prev: 'MT-03', sla: 72, type: 'once', track: 1 },
+  
+  // MT-03: Pure Meeting Task
+  { code: 'MT-03', name: '战略决策会', role: 'QH', phase: '市场定位', desc: '与客户召开会议', prev: 'MT-02', sla: 2, type: 'once', track: 1 },
+  
+  // NEW: MT-03.5 Independent Input Task (Triggered by MT-03)
+  { code: 'MT-03.5', name: '登记主攻国', role: 'QH', phase: '市场定位', desc: '输入确认后的国家，更新系统', prev: 'MT-03', sla: 24, type: 'once', track: 1 },
+
+  // MT-04 now depends on the Input Task (MT-03.5)
+  { code: 'MT-04', name: '目标国深度调研', role: 'TC', phase: '市场定位', desc: '深度报告+穿刺名单V1.0', prev: 'MT-03.5', sla: 72, type: 'once', track: 1 },
 
   // === Phase 3: Localization ===
-  { code: 'LB-01', name: '品牌小广告', role: 'XJ', phase: '在地化基建', desc: '输出小卡片', prev: 'MT-03', sla: 24, type: 'once', track: 1 },
-  { code: 'LB-02', name: '品牌改造方案', role: 'XJ', phase: '在地化基建', desc: '解决方案文档', prev: 'MT-03', sla: 48, type: 'once', track: 1 },
+  { code: 'LB-01', name: '品牌小广告', role: 'XJ', phase: '在地化基建', desc: '输出小卡片', prev: 'MT-03.5', sla: 24, type: 'once', track: 1 },
   
-  // FIX: ZC Whitepaper (LB-03) starts after TC Research (MT-04)
-  { code: 'LB-03', name: '转化白皮书', role: 'ZC', phase: '在地化基建', desc: '制作白皮书', prev: 'MT-04', sla: 72, type: 'once', track: 1 },
+  // LB-02 depends on MT-04
+  { code: 'LB-02', name: '品牌改造方案', role: 'XJ', phase: '在地化基建', desc: '解决方案文档', prev: 'MT-04', sla: 48, type: 'once', track: 1 },
   
+  { code: 'LB-02-TRANS', name: '方案英化翻译', role: 'ZC', phase: '在地化基建', desc: '将品牌方案翻译为英文版', prev: 'LB-02', sla: 24, type: 'once', track: 1 },
+
+  { code: 'LB-03', name: '转化白皮书', role: 'ZC', phase: '在地化基建', desc: '制作白皮书(基于调研)', prev: 'MT-04', sla: 72, type: 'once', track: 1 },
   { code: 'LB-04', name: '卫星站点搭建', role: 'XJ', phase: '在地化基建', desc: '上线站点链接&SEO', prev: 'LB-02', sla: 72, type: 'once', track: 1 },
+  
   { code: 'LB-06', name: '宣传视频制作', role: 'LE', phase: '在地化基建', desc: '数字人视频x2', prev: 'LB-02', sla: 96, type: 'once', track: 1 },
+  { code: 'LB-06-YT', name: '上传Youtube', role: 'LE', phase: '在地化基建', desc: '视频上传至频道并优化SEO', prev: 'LB-06', sla: 24, type: 'once', track: 1 },
+
   { code: 'LB-05', name: '智能客服搭建', role: 'QH', phase: '在地化基建', desc: 'AI客服配置', prev: 'LB-04', sla: 24, type: 'once', track: 1 },
   { code: 'LB-07', name: '素材转化', role: 'ZC', phase: '在地化基建', desc: '社媒内容库初始化', prev: 'LB-02', sla: 48, type: 'once', track: 1 },
-  { code: 'LB-08', name: '基建核心审核', role: 'QH', phase: '在地化基建', desc: '最终版交付物审核', prev: ['LB-05', 'LB-06', 'LB-07'], sla: 24, type: 'once', track: 1 },
+  // Merge Point
+  { code: 'LB-08', name: '基建核心审核', role: 'QH', phase: '在地化基建', desc: '最终版交付物审核', prev: ['LB-05', 'LB-06-YT', 'LB-07'], sla: 24, type: 'once', track: 1 },
 
   // === Phase 4: Market Penetration ===
-  // All Outreach starts after MT-04 (List Ready)
   { code: 'MP-01', name: '高潜名单触达', role: 'TC', phase: '市场渗透', desc: '每日筛选与触达', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
   { code: 'MP-02', name: '穿刺联系方式', role: 'ST', phase: '市场渗透', desc: '完善客户数据表', prev: 'MT-04', sla: 48, type: 'continuous', track: 1 },
   { code: 'MP-03', name: '批量触达(领英)', role: 'ST', phase: '市场渗透', desc: '每日触达/多号操作', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
-  
-  // FIX: LE SINOVA Outreach - Continuous, after MT-04
   { code: 'MP-04', name: 'SINOVA批量触达', role: 'LE', phase: '市场渗透', desc: '每日SINOVA账号触达', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
+  // Weekly Email
+  { code: 'MP-05', name: '邮件阵地触达', role: 'ZC', phase: '市场渗透', desc: '每周邮件营销 (含Followup)', prev: 'LB-03', sla: 168, type: 'weekly', track: 1 }, 
   
-  // FIX: ZC Email - Weekly, after LB-03 (Whitepaper ready)
-  { code: 'MP-05', name: '邮件阵地触达', role: 'ZC', phase: '市场渗透', desc: '每周邮件营销', prev: 'LB-03', sla: 168, type: 'weekly', track: 1 }, 
-  
-  { code: 'MP-CONTENT', name: '社媒素材转化', role: 'ZC', phase: '市场渗透', desc: '周一三五转化素材', prev: 'LB-07', sla: 24, type: 'mwf', track: 1 }, 
+  // Combined Social Media
+  { code: 'MP-CONTENT', name: '社媒素材转化', role: 'ZC', phase: '市场渗透', desc: '周一三五转化素材 + 同步分发FB/INS', prev: 'LB-07', sla: 24, type: 'mwf', track: 1 }, 
   { code: 'MP-06', name: '发布社媒动态', role: 'ALL', phase: '市场渗透', desc: '周一三五全员发布', prev: 'MP-CONTENT', sla: 24, type: 'mwf', track: 1 },
-  { code: 'MP-07', name: '多渠道运营', role: 'ZC', phase: '市场渗透', desc: 'FB/Ins运营节点', prev: 'LB-07', sla: 48, type: 'weekly', track: 1 },
 
   // === Phase 5: Lead ===
   { code: 'LO-01', name: '线索登记(MQL)', role: 'XJ', phase: '线索转化', desc: '更新CRM/概率表', prev: 'MP-03', sla: 24, type: 'continuous', track: 1 },
@@ -94,9 +105,9 @@ const TRACK_2_NURTURE_TEMPLATE = [
 
 // Track 2: Strike
 const TRACK_2_STRIKE_TEMPLATE = [
-  { code: 'S-LOOP-01', name: '识别重点攻坚', role: 'QH', phase: '重点攻坚', desc: 'CRM标记攻坚目标', sla: 48, type: 'once', track: 2, round: 99 },
-  { code: 'S-LOOP-02', name: '定制轻方案', role: 'ZC', phase: '重点攻坚', desc: '针对性PPT/PDF', prev: 'S-LOOP-01', sla: 48, type: 'once', track: 2, round: 99 },
-  { code: 'S-LOOP-03', name: '高管私信攻坚', role: 'TC', phase: '重点攻坚', desc: '发送方案给CEO', prev: 'S-LOOP-02', sla: 48, type: 'continuous', track: 2, round: 99 },
+  { code: 'S-LOOP-01', name: '识别重点攻坚', role: 'QH', phase: '重点攻坚', desc: 'CRM标记攻坚目标', sla: 48, type: 'once', track: 2 },
+  { code: 'S-LOOP-02', name: '定制轻方案', role: 'ZC', phase: '重点攻坚', desc: '针对性PPT/PDF', prev: 'S-LOOP-01', sla: 48, type: 'once', track: 2 },
+  { code: 'S-LOOP-03', name: '高管私信攻坚', role: 'TC', phase: '重点攻坚', desc: '发送方案给CEO', prev: 'S-LOOP-02', sla: 48, type: 'once', track: 2 },
 ];
 
 const TRACK_3_TEMPLATE = [
@@ -139,12 +150,14 @@ export default function App() {
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newClientName, setNewClientName] = useState('');
+  const [newClientDate, setNewClientDate] = useState(new Date().toISOString().split('T')[0]);
   const [taskFilter, setTaskFilter] = useState('priority'); 
   const [expandedGroups, setExpandedGroups] = useState({});
 
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
   const [logModal, setLogModal] = useState({ show: false, task: null, content: '' });
   const [leadModal, setLeadModal] = useState({ show: false, task: null, clientName: '', clientId: '', contact: '', note: '' });
+  const [countryModal, setCountryModal] = useState({ show: false, task: null, country: '' });
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
@@ -165,8 +178,9 @@ export default function App() {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setTasks(data);
       setLoading(false);
+      // Pressure check: > 30 active tasks
       const activeCount = data.filter(t => t.status === 'pending' || t.status === 'in-progress').length;
-      setPressureMode(activeCount > 20);
+      setPressureMode(activeCount > 30);
     });
     const unsubClients = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'clients'), orderBy('createdAt', 'desc')), (snap) => {
       setClients(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -179,22 +193,35 @@ export default function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // --- ACTIONS ---
+
   const createClient = async () => {
     if (!newClientName.trim() || isSubmitting) return; 
     setIsSubmitting(true);
     const clientId = `CLIENT-${Date.now()}`;
     const batch = writeBatch(db);
 
+    // Use selected date for start calculations
+    const startTimestamp = new Date(newClientDate); 
+    const timestamp = serverTimestamp(); 
+
     batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId), {
-      name: newClientName, createdAt: serverTimestamp(), status: 'active', progress: 0, currentRound: 1, startWeek: serverTimestamp()
+      name: newClientName,
+      createdAt: timestamp,
+      startDate: startTimestamp, 
+      status: 'active',
+      progress: 0,
+      currentRound: 1
     });
 
     const starters = WORKFLOW_TEMPLATE.filter(t => !t.prev);
     starters.forEach(t => {
       const taskId = `${clientId}-${t.code}`;
+      const slaTime = new Date(startTimestamp.getTime() + getSlaDuration(t.sla, pressureMode));
+      
       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
         ...t, clientId, clientName: newClientName, status: 'pending', isReady: true,
-        createdAt: serverTimestamp(), dueDate: new Date(Date.now() + getSlaDuration(t.sla, pressureMode)), logs: []
+        createdAt: timestamp, dueDate: slaTime, logs: []
       });
     });
 
@@ -206,6 +233,7 @@ export default function App() {
   };
 
   const triggerNextTasks = (completedTask, existingTasks, batch) => {
+    // Filter Standard & Nurture. NOT Strike (they are manual/independent)
     const nextSteps = [
       ...WORKFLOW_TEMPLATE.filter(t => {
         const prevs = Array.isArray(t.prev) ? t.prev : [t.prev];
@@ -217,6 +245,8 @@ export default function App() {
     nextSteps.forEach(nextT => {
       const targetRole = nextT.track === 2 ? completedTask.role : nextT.role;
       if (nextT.track === 2 && targetRole === 'XJ') return; 
+
+      const context = completedTask.context || null; 
 
       const uniqueCode = nextT.track === 2 ? `${nextT.code}-${targetRole}` : nextT.code;
       if (existingTasks.find(t => t.code === nextT.code && (nextT.track === 2 ? t.role === targetRole : true))) return;
@@ -234,12 +264,16 @@ export default function App() {
         const taskId = `${completedTask.clientId}-${uniqueCode}`;
         const now = new Date();
         const duration = nextT.sla === 1440 ? (60 * 24 * 3600000) : getSlaDuration(nextT.sla, pressureMode);
+        
         batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
-          ...nextT, role: targetRole, clientId: completedTask.clientId, clientName: completedTask.clientName,
+          ...nextT, 
+          role: targetRole, 
+          clientId: completedTask.clientId, clientName: completedTask.clientName,
           status: 'pending', isReady: true, createdAt: serverTimestamp(),
           dueDate: new Date(now.getTime() + duration), logs: [],
           originalCode: nextT.code,
-          name: nextT.track === 2 ? `${nextT.name} (${targetRole}线)` : nextT.name
+          name: nextT.track === 2 ? `${nextT.name} (${targetRole}线)` : nextT.name,
+          context: context 
         });
       }
     });
@@ -257,7 +291,42 @@ export default function App() {
     batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId), { currentRound: 2, nurtureActive: true });
   };
 
+  const submitCountry = async () => {
+    const { task, country } = countryModal;
+    if (!country || isSubmitting) return; 
+    
+    // FIX: IMMEDIATE CLOSE & LOCK
+    setIsSubmitting(true);
+    setCountryModal({ show: false, task: null, country: '' }); 
+
+    try {
+      const batch = writeBatch(db);
+      const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
+      const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'clients', task.clientId);
+      
+      const newName = `${task.clientName} - ${country}`;
+      batch.update(clientRef, { name: newName });
+      batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
+      
+      const clientTasks = tasks.filter(t => t.clientId === task.clientId);
+      triggerNextTasks({ ...task, clientName: newName }, clientTasks, batch); 
+      
+      await batch.commit();
+      showToast(`✅ 目标国 ${country} 已登记`);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const submitComplete = async (task) => {
+    // Intercept MT-03.5
+    if (task.code === 'MT-03.5') { 
+      setCountryModal({ show: true, task, country: '' });
+      return;
+    }
+
     setProcessingTasks(prev => ({ ...prev, [task.id]: true }));
     try {
       const batch = writeBatch(db);
@@ -265,7 +334,11 @@ export default function App() {
       batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
 
       const clientTasks = tasks.filter(t => t.clientId === task.clientId);
-      triggerNextTasks(task, clientTasks, batch);
+      
+      // FIX: Strike tasks (Track 2, no round) DO NOT trigger next tasks
+      if (task.track !== 2 || (task.track === 2 && task.round)) { 
+        triggerNextTasks(task, clientTasks, batch);
+      }
 
       const milestones = clientTasks.filter(t => t.track === 1 && t.type === 'once');
       const completedCount = milestones.filter(t => t.status === 'completed').length + (task.type==='once' && task.status!=='completed' ? 1 : 0);
@@ -310,14 +383,18 @@ export default function App() {
     const { clientName, clientId, contact, note, task } = leadModal;
     if (!contact || !note) return alert("请填写完整商机信息");
     const batch = writeBatch(db);
+    
+    // Trigger ONLY the first step of Strike. The rest will chain via triggerNextTasks
     TRACK_2_STRIKE_TEMPLATE.forEach(t => {
       const taskId = `${clientId}-${t.code}-${Date.now()}`; 
       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
         ...t, clientId, clientName, status: 'pending', isReady: true,
         createdAt: serverTimestamp(), dueDate: getNextDueDate('daily'), logs: [],
-        context: { contact, note, sourceRole: currentRole, sourceUser: user.uid, sourceTask: task?.name } 
+        context: { contact, note, sourceRole: currentRole, sourceUser: user.uid, sourceTask: task?.name || '' }, 
+        originalCode: t.code
       });
     });
+
     if (task) {
       const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
       batch.update(taskRef, {
@@ -332,6 +409,12 @@ export default function App() {
   };
 
   const requestComplete = (task) => {
+    // Intercept MT-03.5 for Country Input
+    if (task.code === 'MT-03.5') {
+       setCountryModal({ show: true, task, country: '' });
+       return;
+    }
+
     const isOnce = task.type === 'once';
     const isOutreachEnd = ['MP-01', 'MP-03', 'MP-05'].includes(task.code);
     setConfirmModal({
@@ -357,6 +440,24 @@ export default function App() {
   const requestUndo = (task) => setConfirmModal({ show: true, title: "撤回任务?", message: "恢复为待办。", onConfirm: () => submitUndo(task) });
   const openLeadModal = (task) => setLeadModal({ show: true, task, clientName: task.clientName, clientId: task.clientId, contact: '', note: '' });
 
+  const generateInternalTasks = async () => {
+    const batch = writeBatch(db);
+    const clientId = 'INTERNAL_OPS';
+    TRACK_3_TEMPLATE.forEach(t => {
+      const taskId = `${clientId}-${t.code}`;
+      if (!tasks.find(x => x.id === taskId)) {
+        batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
+          ...t, clientId, clientName: '🏢 公司内部建设', status: 'pending', isReady: true,
+          createdAt: serverTimestamp(), dueDate: getNextDueDate(t.type), logs: []
+        });
+      }
+    });
+    await batch.commit();
+    showToast("🏢 内部任务已刷新");
+  };
+
+  // --- VIEWS ---
+
   const renderTaskItem = (task) => {
     const isRecurring = ['continuous', 'daily', 'weekly', 'mwf'].includes(task.type);
     const dueDate = task.dueDate ? new Date(task.dueDate.seconds * 1000) : null;
@@ -368,7 +469,9 @@ export default function App() {
     return (
       <div key={task.id} className={`bg-white p-4 border-b border-slate-50 hover:bg-slate-50 transition-all flex items-start gap-4 group ${isOverdue && !isCompleted ? 'bg-red-50/30' : ''}`}>
         <div className="pt-1">
-          {isCompleted ? <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><CheckSquare size={16} /></div> : (
+          {isCompleted ? (
+            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><CheckSquare size={16} /></div>
+          ) : (
             <div className="flex flex-col gap-2">
               {isRecurring && (
                 <button onClick={() => setLogModal({ show: true, task, content: '' })} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100" title="打卡"><FileText size={14}/></button>
@@ -382,13 +485,21 @@ export default function App() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-xs font-bold text-slate-400">{task.code}</span>
+            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">{task.clientName}</span>
+            {task.prev && !isCompleted && <span className="text-[10px] text-blue-400 bg-blue-50 px-1.5 py-0.5 rounded flex items-center"><ArrowUpRight size={10} className="mr-1"/> 承接上游</span>}
             {isOverdue && !isCompleted && <span className="text-xs text-red-500 font-bold flex items-center"><AlertTriangle size={10} className="mr-1"/> 逾期</span>}
             {task.track === 2 && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded flex items-center"><Zap size={8} className="mr-1"/> 攻坚</span>}
             {task.round && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">第{task.round}轮</span>}
           </div>
           <h3 className={`font-bold text-sm text-slate-800 ${isCompleted ? 'line-through text-slate-400' : ''}`}>{task.name}</h3>
           <p className="text-xs text-slate-500 mt-0.5">{task.desc}</p>
-          {context && <div className="mt-2 text-xs bg-purple-50 border border-purple-100 text-purple-800 p-2 rounded"><div className="font-bold flex items-center gap-1 mb-1"><Flame size={12}/> 线索来源: {context.sourceRole} ({context.sourceTask})</div><div>🎯 目标: {context.contact}</div><div className="mt-1">📝 备注: {context.note}</div></div>}
+          {context && (
+            <div className="mt-2 text-xs bg-purple-50 border border-purple-100 text-purple-800 p-2 rounded">
+              <div className="font-bold flex items-center gap-1 mb-1"><Flame size={12}/> 线索来源: {context.sourceRole} ({context.sourceTask})</div>
+              <div>🎯 目标: {context.contact}</div>
+              <div className="mt-1">📝 备注: {context.note}</div>
+            </div>
+          )}
           {!isCompleted && (task.phase === '市场渗透' || task.phase === '线索转化' || task.phase === '静默激活') && (
             <button onClick={() => openLeadModal(task)} className="mt-2 text-[10px] flex items-center gap-1 text-purple-600 border border-purple-100 px-2 py-0.5 rounded hover:bg-purple-50 transition-colors"><Flame size={10}/> 发现商机</button>
           )}
@@ -396,12 +507,15 @@ export default function App() {
         <div className="text-right text-xs text-slate-400 pt-1 min-w-[80px]">
           {dueDate && !isCompleted && <div className={isOverdue ? 'text-red-500 font-bold' : ''}>{dueDate.toLocaleDateString()}</div>}
           {isCompleted && <span className="text-emerald-600">已完成</span>}
+          {/* FIX: Undo button in History/Completed */}
+          {isCompleted && activeTab === 'completed' && (
+            <button onClick={() => requestUndo(task)} className="ml-2 text-slate-400 hover:text-yellow-600 flex items-center gap-1"><RotateCcw size={12}/> 撤销</button>
+          )}
         </div>
       </div>
     );
   };
 
-  // --- GROUPED TASK RENDER (V28.1 RESTORED) ---
   const renderGroupedTasks = (filtered) => {
     const groups = filtered.reduce((acc, task) => {
       const key = task.clientName || '其他';
@@ -437,12 +551,7 @@ export default function App() {
   };
 
   const filteredTasks = useMemo(() => {
-    // FIX: RESTRICT XJ TO ONLY SEE XJ TASKS
-    let list = tasks.filter(t => {
-      if (currentRole === 'FOUNDER' || currentRole === 'ALL') return true;
-      return t.role === currentRole || t.role === 'ALL';
-    });
-    
+    let list = tasks.filter(t => t.role === currentRole || currentRole === 'ALL' || t.role === 'ALL' || currentRole === 'FOUNDER');
     list = list.filter(t => activeTab === 'completed' ? t.status === 'completed' : t.status !== 'completed');
     if (taskFilter === 'urgent' && activeTab !== 'completed') {
       const today = new Date(); today.setHours(23,59,59,999);
@@ -460,7 +569,7 @@ export default function App() {
       <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen fixed left-0 top-0 z-10 shadow-xl">
         <div className="p-6 border-b border-slate-800">
           <h1 className="text-lg font-bold text-white flex items-center gap-2"><Activity className="text-blue-500"/> 粤新链·指挥台</h1>
-          <p className="text-[10px] mt-1 text-slate-500">V30.0 完美秩序版</p>
+          <p className="text-[10px] mt-1 text-slate-500">V38.0 终极完美交付版</p>
           <div className={`mt-4 p-2 rounded flex items-center gap-2 text-xs font-bold ${pressureMode ? 'bg-red-900/50 text-red-400 animate-pulse' : 'bg-slate-800 text-emerald-400'}`}>
             <Gauge size={14}/> {pressureMode ? '高压模式' : '系统负载正常'}
           </div>
@@ -493,15 +602,29 @@ export default function App() {
         {(activeTab === 'my-tasks' || activeTab === 'completed') && (
           <div className="max-w-5xl mx-auto space-y-4">
             <header className="mb-4 flex justify-between items-center"><h2 className="text-xl font-bold text-slate-800">{activeTab === 'completed' ? '已归档任务' : '待办流水线'}</h2><div className="flex gap-1 bg-slate-100 p-1 rounded"><button onClick={() => setTaskFilter('priority')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'priority' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}>全部</button><button onClick={() => setTaskFilter('urgent')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'urgent' ? 'bg-white shadow text-red-600' : 'text-slate-500'}`}>急件</button><button onClick={() => setTaskFilter('track2')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'track2' ? 'bg-white shadow text-purple-600' : 'text-slate-500'}`}>攻坚</button></div></header>
-            {/* V28.1 GROUPED RENDER RESTORED */}
             {renderGroupedTasks(filteredTasks)}
           </div>
         )}
-        {activeTab === 'clients' && <div className="max-w-5xl mx-auto space-y-6"><header className="flex justify-between items-center"><h2 className="text-2xl font-bold">客户全景</h2><button onClick={() => setShowNewClientModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded shadow"><Plus size={18}/> 新签约</button></header><div className="grid gap-4">{clients.map(c => <div key={c.id} className="bg-white p-6 rounded-xl border shadow-sm"><div className="flex justify-between"><h3 className="font-bold">{c.name}</h3><div className="text-xs text-slate-400">入池 {Math.ceil((new Date()-new Date(c.startWeek?.seconds*1000))/(604800000))} 周</div></div><div className="flex gap-2 mt-1 text-xs"><span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Round: {c.currentRound || 1}</span></div><div className="w-full h-2 bg-slate-100 rounded mt-2"><div className="h-full bg-blue-500" style={{width: `${c.progress}%`}}></div></div></div>)}</div></div>}
+        {activeTab === 'clients' && <div className="max-w-5xl mx-auto space-y-6"><header className="flex justify-between items-center"><h2 className="text-2xl font-bold">客户全景</h2><button onClick={() => setShowNewClientModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded shadow"><Plus size={18}/> 新签约</button></header><div className="grid gap-4">{clients.map(c => {
+           // Monthly Review Logic
+           const daysActive = Math.floor((new Date() - new Date(c.createdAt?.seconds*1000)) / (1000*60*60*24));
+           const needsReview = daysActive > 0 && daysActive % 30 === 0;
+           return (
+             <div key={c.id} className="bg-white p-6 rounded-xl border shadow-sm relative">
+               {needsReview && <span className="absolute top-2 right-2 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"><Calendar size={12}/> 需月度复盘</span>}
+               <div className="flex justify-between"><h3 className="font-bold">{c.name}</h3><div className="text-xs text-slate-400">入池第 {Math.ceil((new Date()-new Date(c.startDate?.seconds*1000))/(1000*60*60*24*7))} 周</div></div><div className="flex gap-2 mt-1 text-xs"><span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Round: {c.currentRound || 1}</span></div><div className="w-full h-2 bg-slate-100 rounded mt-2"><div className="h-full bg-blue-500" style={{width: `${c.progress}%`}}></div></div></div>
+           )
+        })}</div></div>}
       </main>
       {confirmModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-2">{confirmModal.title}</h3><p className="text-sm text-slate-500 mb-6">{confirmModal.message}</p><div className="flex justify-end gap-3"><button onClick={() => setConfirmModal({...confirmModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={confirmModal.onConfirm} className="px-4 py-2 bg-blue-600 text-white rounded">确认</button></div></div></div>}
-      {showNewClientModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-8 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-4">新客户签约</h3><input className="w-full border p-3 rounded mb-6" placeholder="客户全称" value={newClientName} onChange={e=>setNewClientName(e.target.value)} autoFocus /><div className="flex justify-end gap-2"><button onClick={() => setShowNewClientModal(false)} disabled={isSubmitting} className="px-4 py-2 text-slate-500">取消</button><button onClick={createClient} disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded flex items-center gap-2">{isSubmitting && <Loader2 className="animate-spin" size={16}/>} 启动</button></div></div></div>}
+      {showNewClientModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-8 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-4">新客户签约</h3>
+      <div className="space-y-4">
+        <input className="w-full border p-3 rounded mb-6" placeholder="客户全称" value={newClientName} onChange={e=>setNewClientName(e.target.value)} autoFocus />
+        <div><label className="text-xs text-slate-500">签约时间 (支持补录)</label><input type="date" className="w-full border p-3 rounded" value={newClientDate} onChange={e=>setNewClientDate(e.target.value)} /></div>
+      </div>
+      <div className="flex justify-end gap-2 mt-6"><button onClick={() => setShowNewClientModal(false)} disabled={isSubmitting} className="px-4 py-2 text-slate-500">取消</button><button onClick={createClient} disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded flex items-center gap-2">{isSubmitting && <Loader2 className="animate-spin" size={16}/>} 启动</button></div></div></div>}
       {leadModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[500px] shadow-2xl"><h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Flame className="text-purple-500"/> 商机登记卡</h3><div className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1">目标客户</label><input className="w-full border p-2 rounded" placeholder="例如: CEO John Doe" value={leadModal.contact} onChange={e=>setLeadModal({...leadModal, contact: e.target.value})} autoFocus/></div><div><label className="block text-xs font-bold text-slate-500 mb-1">需求备注</label><textarea className="w-full border p-2 rounded h-24 resize-none" placeholder="详情..." value={leadModal.note} onChange={e=>setLeadModal({...leadModal, note: e.target.value})} /></div></div><div className="flex justify-end gap-2 mt-6"><button onClick={() => setLeadModal({...leadModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={submitLead} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">登记并启动攻坚</button></div></div></div>}
+      {countryModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Globe className="text-blue-500"/> 确认主攻国</h3><input className="w-full border p-3 rounded mb-4" placeholder="例如: 美国" value={countryModal.country} onChange={e=>setCountryModal({...countryModal, country: e.target.value})} autoFocus /><div className="flex justify-end gap-2"><button onClick={() => setCountryModal({...countryModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={submitCountry} disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded">确认并变更客户名</button></div></div></div>}
       {logModal.show && logModal.task && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[500px] shadow-2xl"><h3 className="text-lg font-bold mb-4">📝 {logModal.task.name} - 日常打卡</h3><textarea className="w-full border p-3 rounded mb-4 h-32 resize-none" placeholder="今日进展..." value={logModal.content} onChange={e=>setLogModal({...logModal, content: e.target.value})} autoFocus /><div className="flex justify-end gap-2"><button onClick={() => setLogModal({...logModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={submitCheckIn} className="px-4 py-2 bg-blue-600 text-white rounded">确认</button></div></div></div>}
     </div>
   );
