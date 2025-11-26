@@ -25,7 +25,6 @@ const firebaseConfig = {
   messagingSenderId: "535670397178",
   appId: "1:535670397178:web:24caa2e735644621419143"
 };
-const firebaseConfig = JSON.parse(__firebase_config);
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -629,3 +628,4 @@ export default function App() {
     </div>
   );
 }
+
