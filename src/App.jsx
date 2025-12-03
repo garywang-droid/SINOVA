@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
   getFirestore, collection, doc, setDoc, getDocs, 
-  updateDoc, onSnapshot, query, where, orderBy, serverTimestamp, writeBatch 
+  updateDoc, onSnapshot, query, where, orderBy, serverTimestamp, writeBatch, deleteDoc, getDoc 
 } from 'firebase/firestore';
 import { 
   getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken 
@@ -26,15 +26,10 @@ const firebaseConfig = {
   appId: "1:535670397178:web:24caa2e735644621419143"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
 // --- CONSTANTS ---
 const ROLES = ['FOUNDER', 'XJ', 'ST', 'TC', 'QH', 'LE', 'ZC', 'ALL'];
 
-// --- WORKFLOW DNA (V40.0 Final Architecture) ---
+// --- WORKFLOW DNA (V32.0 Customized) ---
 const WORKFLOW_TEMPLATE = [
   // === Phase 1: Launch ===
   { code: 'L-01', name: '确认签约', role: 'XJ', phase: '签约启动', desc: '看板客户卡片建立', sla: 24, type: 'once', track: 1 },
@@ -45,33 +40,33 @@ const WORKFLOW_TEMPLATE = [
   // === Phase 2: Market Targeting ===
   { code: 'MT-01', name: 'AI市场初筛', role: 'TC', phase: '市场定位', desc: '输出初筛报告', prev: 'L-04', sla: 12, type: 'once', track: 1 },
   { code: 'MT-02', name: '会前准备', role: 'XJ', phase: '市场定位', desc: '会议资料(PPT/视频)', prev: 'MT-01', sla: 4, type: 'once', track: 1 },
-  
-  // MT-03: Pure Meeting Task
+  // MT-03 Modified: Just the meeting task. Completion triggers MT-03.5
   { code: 'MT-03', name: '战略决策会', role: 'QH', phase: '市场定位', desc: '与客户召开会议', prev: 'MT-02', sla: 2, type: 'once', track: 1 },
   
-  // NEW: MT-03.5 Independent Input Task (Triggered by MT-03)
+  // MT-03.5: Independent Input Task (Triggered by MT-03)
   { code: 'MT-03.5', name: '登记主攻国', role: 'QH', phase: '市场定位', desc: '输入确认后的国家，更新系统', prev: 'MT-03', sla: 24, type: 'once', track: 1 },
 
-  // MT-04 now depends on the Input Task (MT-03.5)
+  // MT-04 depends on the Input Task (MT-03.5)
   { code: 'MT-04', name: '目标国深度调研', role: 'TC', phase: '市场定位', desc: '深度报告+穿刺名单V1.0', prev: 'MT-03.5', sla: 72, type: 'once', track: 1 },
 
   // === Phase 3: Localization ===
   { code: 'LB-01', name: '品牌小广告', role: 'XJ', phase: '在地化基建', desc: '输出小卡片', prev: 'MT-03.5', sla: 24, type: 'once', track: 1 },
   
-  // LB-02 depends on MT-04
+  // FIX: LB-02 now depends on MT-04 (TC Research), NOT MT-03
   { code: 'LB-02', name: '品牌改造方案', role: 'XJ', phase: '在地化基建', desc: '解决方案文档', prev: 'MT-04', sla: 48, type: 'once', track: 1 },
   
+  // NEW TASK: ZC Translation (Triggered by LB-02)
   { code: 'LB-02-TRANS', name: '方案英化翻译', role: 'ZC', phase: '在地化基建', desc: '将品牌方案翻译为英文版', prev: 'LB-02', sla: 24, type: 'once', track: 1 },
 
   { code: 'LB-03', name: '转化白皮书', role: 'ZC', phase: '在地化基建', desc: '制作白皮书(基于调研)', prev: 'MT-04', sla: 72, type: 'once', track: 1 },
   { code: 'LB-04', name: '卫星站点搭建', role: 'XJ', phase: '在地化基建', desc: '上线站点链接&SEO', prev: 'LB-02', sla: 72, type: 'once', track: 1 },
   
   { code: 'LB-06', name: '宣传视频制作', role: 'LE', phase: '在地化基建', desc: '数字人视频x2', prev: 'LB-02', sla: 96, type: 'once', track: 1 },
+  // NEW TASK: LE Youtube (Triggered by LB-06)
   { code: 'LB-06-YT', name: '上传Youtube', role: 'LE', phase: '在地化基建', desc: '视频上传至频道并优化SEO', prev: 'LB-06', sla: 24, type: 'once', track: 1 },
 
   { code: 'LB-05', name: '智能客服搭建', role: 'QH', phase: '在地化基建', desc: 'AI客服配置', prev: 'LB-04', sla: 24, type: 'once', track: 1 },
   { code: 'LB-07', name: '素材转化', role: 'ZC', phase: '在地化基建', desc: '社媒内容库初始化', prev: 'LB-02', sla: 48, type: 'once', track: 1 },
-  // Merge Point
   { code: 'LB-08', name: '基建核心审核', role: 'QH', phase: '在地化基建', desc: '最终版交付物审核', prev: ['LB-05', 'LB-06-YT', 'LB-07'], sla: 24, type: 'once', track: 1 },
 
   // === Phase 4: Market Penetration ===
@@ -79,10 +74,10 @@ const WORKFLOW_TEMPLATE = [
   { code: 'MP-02', name: '穿刺联系方式', role: 'ST', phase: '市场渗透', desc: '完善客户数据表', prev: 'MT-04', sla: 48, type: 'continuous', track: 1 },
   { code: 'MP-03', name: '批量触达(领英)', role: 'ST', phase: '市场渗透', desc: '每日触达/多号操作', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
   { code: 'MP-04', name: 'SINOVA批量触达', role: 'LE', phase: '市场渗透', desc: '每日SINOVA账号触达', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
-  // Weekly Email
+  // Weekly Email (ZC)
   { code: 'MP-05', name: '邮件阵地触达', role: 'ZC', phase: '市场渗透', desc: '每周邮件营销 (含Followup)', prev: 'LB-03', sla: 168, type: 'weekly', track: 1 }, 
   
-  // Combined Social Media
+  // Combined Social Media + Multi-channel (ZC)
   { code: 'MP-CONTENT', name: '社媒素材转化', role: 'ZC', phase: '市场渗透', desc: '周一三五转化素材 + 同步分发FB/INS', prev: 'LB-07', sla: 24, type: 'mwf', track: 1 }, 
   { code: 'MP-06', name: '发布社媒动态', role: 'ALL', phase: '市场渗透', desc: '周一三五全员发布', prev: 'MP-CONTENT', sla: 24, type: 'mwf', track: 1 },
 
@@ -93,7 +88,7 @@ const WORKFLOW_TEMPLATE = [
   { code: 'LO-04', name: '推进商机', role: 'QH', phase: '线索转化', desc: 'CRM商机阶段更新', prev: 'LO-03', sla: 168, type: 'weekly', track: 1 },
 ];
 
-// Track 2: Nurture Loop
+// Track 2: Nurture Loop (Silent Activation)
 const TRACK_2_NURTURE_TEMPLATE = [
   { code: 'N-LOOP-02', name: '第2轮：发送解决方案', phase: '静默激活', desc: '向目标群组发送《解决方案》', sla: 24, type: 'continuous', track: 2, round: 2 },
   { code: 'N-LOOP-03', name: '第3轮：发送讲解视频', phase: '静默激活', desc: '发送视频内容', prev: 'N-LOOP-02', sla: 168, type: 'continuous', track: 2, round: 3 }, 
@@ -102,11 +97,12 @@ const TRACK_2_NURTURE_TEMPLATE = [
   { code: 'N-LOOP-RECHECK', name: '60天后：静默客户回捞', phase: '静默激活', desc: '检查是否有新的回关或意向', prev: 'N-LOOP-05', sla: 1440, type: 'once', track: 2, round: 6 }, 
 ];
 
-// Track 2: Strike
+// Track 2: Strike (Independent - NO AUTO-CHAIN)
+// FIX: Removed 'prev' to prevent auto-chaining.
 const TRACK_2_STRIKE_TEMPLATE = [
   { code: 'S-LOOP-01', name: '识别重点攻坚', role: 'QH', phase: '重点攻坚', desc: 'CRM标记攻坚目标', sla: 48, type: 'once', track: 2 },
-  { code: 'S-LOOP-02', name: '定制轻方案', role: 'ZC', phase: '重点攻坚', desc: '针对性PPT/PDF', prev: 'S-LOOP-01', sla: 48, type: 'once', track: 2 },
-  { code: 'S-LOOP-03', name: '高管私信攻坚', role: 'TC', phase: '重点攻坚', desc: '发送方案给CEO', prev: 'S-LOOP-02', sla: 48, type: 'once', track: 2 },
+  { code: 'S-LOOP-02', name: '定制轻方案', role: 'ZC', phase: '重点攻坚', desc: '针对性PPT/PDF', sla: 48, type: 'once', track: 2 },
+  { code: 'S-LOOP-03', name: '高管私信攻坚', role: 'TC', phase: '重点攻坚', desc: '发送方案给CEO', sla: 48, type: 'once', track: 2 },
 ];
 
 const TRACK_3_TEMPLATE = [
@@ -177,8 +173,8 @@ export default function App() {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setTasks(data);
       setLoading(false);
-      // Pressure check: > 30 active tasks
-      const activeCount = data.filter(t => t.status === 'pending' || t.status === 'in-progress').length;
+      // Pressure check: > 30 active ONCE tasks
+      const activeCount = data.filter(t => (t.status === 'pending' || t.status === 'in-progress') && t.type === 'once').length;
       setPressureMode(activeCount > 30);
     });
     const unsubClients = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'clients'), orderBy('createdAt', 'desc')), (snap) => {
@@ -216,6 +212,7 @@ export default function App() {
     const starters = WORKFLOW_TEMPLATE.filter(t => !t.prev);
     starters.forEach(t => {
       const taskId = `${clientId}-${t.code}`;
+      // Calculate SLA based on historical start date
       const slaTime = new Date(startTimestamp.getTime() + getSlaDuration(t.sla, pressureMode));
       
       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
@@ -229,6 +226,23 @@ export default function App() {
     setShowNewClientModal(false);
     setIsSubmitting(false);
     showToast(`🚀 客户启动！`);
+  };
+
+  const deleteClient = async (clientId, clientName) => {
+    if (!window.confirm(`⚠️ 确定要删除 [${clientName}] 及其所有任务吗？此操作不可撤销！`)) return;
+    
+    const batch = writeBatch(db);
+    // Delete client
+    batch.delete(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId));
+    
+    // Delete all tasks
+    const clientTasks = tasks.filter(t => t.clientId === clientId);
+    clientTasks.forEach(t => {
+      batch.delete(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', t.id));
+    });
+
+    await batch.commit();
+    showToast(`🗑️ 客户已删除`);
   };
 
   const triggerNextTasks = (completedTask, existingTasks, batch) => {
@@ -294,7 +308,7 @@ export default function App() {
     const { task, country } = countryModal;
     if (!country || isSubmitting) return; 
     
-    // FIX: IMMEDIATE CLOSE & LOCK
+    // FIX: IMMEDIATE CLOSE & RESET
     setIsSubmitting(true);
     setCountryModal({ show: false, task: null, country: '' }); 
 
@@ -311,7 +325,7 @@ export default function App() {
       triggerNextTasks({ ...task, clientName: newName }, clientTasks, batch); 
       
       await batch.commit();
-      showToast(`✅ 目标国 ${country} 已登记`);
+      showToast(`✅ 目标国 ${country} 已登记，任务流转中`);
     } catch (e) {
       console.error(e);
     } finally {
@@ -321,7 +335,7 @@ export default function App() {
 
   const submitComplete = async (task) => {
     // Intercept MT-03.5
-    if (task.code === 'MT-03.5') { 
+    if (task.code === 'MT-03.5') {
       setCountryModal({ show: true, task, country: '' });
       return;
     }
@@ -332,8 +346,9 @@ export default function App() {
       const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
       batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
 
+      // Fix: Define clientTasks before using it
       const clientTasks = tasks.filter(t => t.clientId === task.clientId);
-      
+
       // FIX: Strike tasks (Track 2, no round) DO NOT trigger next tasks
       if (task.track !== 2 || (task.track === 2 && task.round)) { 
         triggerNextTasks(task, clientTasks, batch);
@@ -383,7 +398,7 @@ export default function App() {
     if (!contact || !note) return alert("请填写完整商机信息");
     const batch = writeBatch(db);
     
-    // Trigger ONLY the first step of Strike. The rest will chain via triggerNextTasks
+    // Trigger Strike Tasks (One-time, Independent)
     TRACK_2_STRIKE_TEMPLATE.forEach(t => {
       const taskId = `${clientId}-${t.code}-${Date.now()}`; 
       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
@@ -611,6 +626,7 @@ export default function App() {
            return (
              <div key={c.id} className="bg-white p-6 rounded-xl border shadow-sm relative">
                {needsReview && <span className="absolute top-2 right-2 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"><Calendar size={12}/> 需月度复盘</span>}
+               <button onClick={() => deleteClient(c.id, c.name)} className="absolute top-2 right-28 text-slate-300 hover:text-red-500 p-1"><Trash2 size={14}/></button>
                <div className="flex justify-between"><h3 className="font-bold">{c.name}</h3><div className="text-xs text-slate-400">入池第 {Math.ceil((new Date()-new Date(c.startDate?.seconds*1000))/(1000*60*60*24*7))} 周</div></div><div className="flex gap-2 mt-1 text-xs"><span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Round: {c.currentRound || 1}</span></div><div className="w-full h-2 bg-slate-100 rounded mt-2"><div className="h-full bg-blue-500" style={{width: `${c.progress}%`}}></div></div></div>
            )
         })}</div></div>}
@@ -628,4 +644,3 @@ export default function App() {
     </div>
   );
 }
-
