@@ -25,6 +25,10 @@ const firebaseConfig = {
   messagingSenderId: "535670397178",
   appId: "1:535670397178:web:24caa2e735644621419143"
 };
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 // --- CONSTANTS ---
 const ROLES = ['FOUNDER', 'XJ', 'ST', 'TC', 'QH', 'LE', 'ZC', 'ALL'];
