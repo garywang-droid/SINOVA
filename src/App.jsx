@@ -11,12 +11,12 @@ import {
   LayoutDashboard, Users, CheckSquare, Plus, ArrowRight, AlertTriangle, 
   CheckCircle2, Circle, UserCircle, Activity, FileText,
   RotateCcw, Hourglass, Lock, Trash2, Save, X, Zap,
-  Briefcase, Flame, History, ArrowUpRight, Layers,
+  Briefcase, History, ArrowUpRight, Layers,
   BarChart3, AlertCircle, Loader2, ChevronDown, ChevronUp,
-  ScrollText, Gauge, Globe, Flag, Calendar
+  ScrollText, Globe, Flag, Calendar, Bomb, Unlock, Camera, RefreshCw, Radio, Target, Share2
 } from 'lucide-react';
 
-// --- Firebase Config ---
+// --- Firebase Config & Init ---
 const firebaseConfig = {
   apiKey: "AIzaSyBobE0USzMg0_0nK6h34OoOi1N159ZrDlw",
   authDomain: "sinovalink.firebaseapp.com",
@@ -33,108 +33,38 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 // --- CONSTANTS ---
 const ROLES = ['FOUNDER', 'XJ', 'ST', 'TC', 'QH', 'LE', 'ZC', 'ALL'];
 
-// --- WORKFLOW DNA (V32.0 Customized) ---
+// --- WORKFLOW TEMPLATE (V38.5 Clean) ---
 const WORKFLOW_TEMPLATE = [
-  // === Phase 1: Launch ===
-  { code: 'L-01', name: '确认签约', role: 'XJ', phase: '签约启动', desc: '看板客户卡片建立', sla: 24, type: 'once', track: 1 },
-  { code: 'L-02', name: '合同收集', role: 'ST', phase: '签约启动', desc: '建立Excel/发票/归档', prev: 'L-01', sla: 48, type: 'once', track: 1 },
-  { code: 'L-03', name: '建立工作空间', role: 'TC', phase: '签约启动', desc: '拉群/建文件夹', prev: 'L-01', sla: 4, type: 'once', track: 1 },
-  { code: 'L-04', name: '客户资料归档', role: 'TC', phase: '签约启动', desc: '资料清单入云盘', prev: 'L-03', sla: 24, type: 'once', track: 1 },
-
-  // === Phase 2: Market Targeting ===
-  { code: 'MT-01', name: 'AI市场初筛', role: 'TC', phase: '市场定位', desc: '输出初筛报告', prev: 'L-04', sla: 12, type: 'once', track: 1 },
-  { code: 'MT-02', name: '会前准备', role: 'XJ', phase: '市场定位', desc: '会议资料(PPT/视频)', prev: 'MT-01', sla: 4, type: 'once', track: 1 },
-  // MT-03 Modified: Just the meeting task. Completion triggers MT-03.5
-  { code: 'MT-03', name: '战略决策会', role: 'QH', phase: '市场定位', desc: '与客户召开会议', prev: 'MT-02', sla: 2, type: 'once', track: 1 },
+  // Launch
+  { code: 'L-01', name: '确认签约', role: 'XJ', phase: '签约启动', desc: '看板客户卡片建立', type: 'once' },
+  { code: 'L-02', name: '合同收集', role: 'ST', phase: '签约启动', desc: '建立Excel/发票/归档', prev: 'L-01', type: 'once' },
+  { code: 'L-03', name: '建立工作空间', role: 'TC', phase: '签约启动', desc: '拉群/建文件夹', prev: 'L-01', type: 'once' },
+  { code: 'L-04', name: '客户资料归档', role: 'TC', phase: '签约启动', desc: '资料清单入云盘', prev: 'L-03', type: 'once' },
   
-  // MT-03.5: Independent Input Task (Triggered by MT-03)
-  { code: 'MT-03.5', name: '登记主攻国', role: 'QH', phase: '市场定位', desc: '输入确认后的国家，更新系统', prev: 'MT-03', sla: 24, type: 'once', track: 1 },
-
-  // MT-04 depends on the Input Task (MT-03.5)
-  { code: 'MT-04', name: '目标国深度调研', role: 'TC', phase: '市场定位', desc: '深度报告+穿刺名单V1.0', prev: 'MT-03.5', sla: 72, type: 'once', track: 1 },
-
-  // === Phase 3: Localization ===
-  { code: 'LB-01', name: '品牌小广告', role: 'XJ', phase: '在地化基建', desc: '输出小卡片', prev: 'MT-03.5', sla: 24, type: 'once', track: 1 },
+  // Market Targeting
+  { code: 'MT-01', name: 'AI市场初筛', role: 'TC', phase: '市场定位', desc: '输出初筛报告', prev: 'L-04', type: 'once' },
+  { code: 'MT-02', name: '会前准备', role: 'XJ', phase: '市场定位', desc: '会议资料', prev: 'MT-01', type: 'once' },
+  { code: 'MT-03', name: '战略决策会', role: 'QH', phase: '市场定位', desc: '召开会议', prev: 'MT-02', type: 'once' },
+  { code: 'MT-03.5', name: '登记主攻国', role: 'QH', phase: '市场定位', desc: '输入确认后的国家，更新系统', prev: 'MT-03', type: 'once' },
+  { code: 'MT-04', name: '目标国深度调研', role: 'TC', phase: '市场定位', desc: '深度报告', prev: 'MT-03.5', type: 'once' },
   
-  // FIX: LB-02 now depends on MT-04 (TC Research), NOT MT-03
-  { code: 'LB-02', name: '品牌改造方案', role: 'XJ', phase: '在地化基建', desc: '解决方案文档', prev: 'MT-04', sla: 48, type: 'once', track: 1 },
+  // Penetration Prep (Trigger Chain)
+  { code: 'MP-PRE-01', name: '企业穿刺', role: 'TC', phase: '市场渗透', desc: '基于调研整理Top企业名单', prev: 'MT-04', type: 'once' },
+  { code: 'MP-PRE-02', name: '穿刺联系方式', role: 'ST', phase: '市场渗透', desc: '完善客户数据表', prev: 'MP-PRE-01', type: 'once' },
   
-  // NEW TASK: ZC Translation (Triggered by LB-02)
-  { code: 'LB-02-TRANS', name: '方案英化翻译', role: 'ZC', phase: '在地化基建', desc: '将品牌方案翻译为英文版', prev: 'LB-02', sla: 24, type: 'once', track: 1 },
-
-  { code: 'LB-03', name: '转化白皮书', role: 'ZC', phase: '在地化基建', desc: '制作白皮书(基于调研)', prev: 'MT-04', sla: 72, type: 'once', track: 1 },
-  { code: 'LB-04', name: '卫星站点搭建', role: 'XJ', phase: '在地化基建', desc: '上线站点链接&SEO', prev: 'LB-02', sla: 72, type: 'once', track: 1 },
+  // Localization
+  { code: 'LB-01', name: '品牌小广告', role: 'XJ', phase: '在地化基建', desc: '输出小卡片', prev: 'MT-03.5', type: 'once' },
+  { code: 'LB-02', name: '品牌改造方案', role: 'XJ', phase: '在地化基建', desc: '解决方案文档', prev: 'MT-04', type: 'once' },
+  { code: 'LB-02-REVIEW', name: '方案审核', role: 'QH', phase: '在地化基建', desc: '通过或驳回', prev: 'LB-02', type: 'once' },
+  { code: 'LB-02-FINAL', name: '方案定稿', role: 'XJ', phase: '在地化基建', desc: '添加PPT动效，最终定稿', prev: 'LB-02-REVIEW', type: 'once' },
+  { code: 'LB-02-TRANS', name: '方案英化翻译', role: 'ZC', phase: '在地化基建', desc: '翻译方案', prev: 'LB-02-FINAL', type: 'once' },
+  { code: 'LB-04', name: '卫星站点搭建', role: 'XJ', phase: '在地化基建', desc: '上线站点链接&SEO', prev: 'LB-02-FINAL', type: 'once' },
+  { code: 'LB-06', name: '宣传视频制作', role: 'LE', phase: '在地化基建', desc: '数字人视频x2', prev: 'LB-02-FINAL', type: 'once' },
+  { code: 'LB-07', name: '素材转化', role: 'ZC', phase: '在地化基建', desc: '社媒内容库初始化', prev: 'LB-02-FINAL', type: 'once' },
   
-  { code: 'LB-06', name: '宣传视频制作', role: 'LE', phase: '在地化基建', desc: '数字人视频x2', prev: 'LB-02', sla: 96, type: 'once', track: 1 },
-  // NEW TASK: LE Youtube (Triggered by LB-06)
-  { code: 'LB-06-YT', name: '上传Youtube', role: 'LE', phase: '在地化基建', desc: '视频上传至频道并优化SEO', prev: 'LB-06', sla: 24, type: 'once', track: 1 },
-
-  { code: 'LB-05', name: '智能客服搭建', role: 'QH', phase: '在地化基建', desc: 'AI客服配置', prev: 'LB-04', sla: 24, type: 'once', track: 1 },
-  { code: 'LB-07', name: '素材转化', role: 'ZC', phase: '在地化基建', desc: '社媒内容库初始化', prev: 'LB-02', sla: 48, type: 'once', track: 1 },
-  { code: 'LB-08', name: '基建核心审核', role: 'QH', phase: '在地化基建', desc: '最终版交付物审核', prev: ['LB-05', 'LB-06-YT', 'LB-07'], sla: 24, type: 'once', track: 1 },
-
-  // === Phase 4: Market Penetration ===
-  { code: 'MP-01', name: '高潜名单触达', role: 'TC', phase: '市场渗透', desc: '每日筛选与触达', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
-  { code: 'MP-02', name: '穿刺联系方式', role: 'ST', phase: '市场渗透', desc: '完善客户数据表', prev: 'MT-04', sla: 48, type: 'continuous', track: 1 },
-  { code: 'MP-03', name: '批量触达(领英)', role: 'ST', phase: '市场渗透', desc: '每日触达/多号操作', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
-  { code: 'MP-04', name: 'SINOVA批量触达', role: 'LE', phase: '市场渗透', desc: '每日SINOVA账号触达', prev: 'MT-04', sla: 24, type: 'continuous', track: 1 },
-  // Weekly Email (ZC)
-  { code: 'MP-05', name: '邮件阵地触达', role: 'ZC', phase: '市场渗透', desc: '每周邮件营销 (含Followup)', prev: 'LB-03', sla: 168, type: 'weekly', track: 1 }, 
-  
-  // Combined Social Media + Multi-channel (ZC)
-  { code: 'MP-CONTENT', name: '社媒素材转化', role: 'ZC', phase: '市场渗透', desc: '周一三五转化素材 + 同步分发FB/INS', prev: 'LB-07', sla: 24, type: 'mwf', track: 1 }, 
-  { code: 'MP-06', name: '发布社媒动态', role: 'ALL', phase: '市场渗透', desc: '周一三五全员发布', prev: 'MP-CONTENT', sla: 24, type: 'mwf', track: 1 },
-
-  // === Phase 5: Lead ===
-  { code: 'LO-01', name: '线索登记(MQL)', role: 'XJ', phase: '线索转化', desc: '更新CRM/概率表', prev: 'MP-03', sla: 24, type: 'continuous', track: 1 },
-  { code: 'LO-02', name: 'MQL初步互动', role: 'TC', phase: '线索转化', desc: '互动记录', prev: 'LO-01', sla: 24, type: 'continuous', track: 1 },
-  { code: 'LO-03', name: '升级SQL指派', role: 'XJ', phase: '线索转化', desc: '@QH指派通知', prev: 'LO-02', sla: 4, type: 'once', track: 1 },
-  { code: 'LO-04', name: '推进商机', role: 'QH', phase: '线索转化', desc: 'CRM商机阶段更新', prev: 'LO-03', sla: 168, type: 'weekly', track: 1 },
+  // Internal/Ops
+  { code: 'INT-WEB-WRITING', name: '白皮书/GEO文章', role: 'ZC', phase: '内部建设', desc: '撰写内容', type: 'once', prev: 'MT-04' },
 ];
-
-// Track 2: Nurture Loop (Silent Activation)
-const TRACK_2_NURTURE_TEMPLATE = [
-  { code: 'N-LOOP-02', name: '第2轮：发送解决方案', phase: '静默激活', desc: '向目标群组发送《解决方案》', sla: 24, type: 'continuous', track: 2, round: 2 },
-  { code: 'N-LOOP-03', name: '第3轮：发送讲解视频', phase: '静默激活', desc: '发送视频内容', prev: 'N-LOOP-02', sla: 168, type: 'continuous', track: 2, round: 3 }, 
-  { code: 'N-LOOP-04', name: '第4轮：发送白皮书', phase: '静默激活', desc: '发送白皮书并引导下载', prev: 'N-LOOP-03', sla: 168, type: 'continuous', track: 2, round: 4 },
-  { code: 'N-LOOP-05', name: '第5轮：最终全景激活', phase: '静默激活', desc: '发送SINOVAlink全景方案+阵亡分析', prev: 'N-LOOP-04', sla: 168, type: 'continuous', track: 2, round: 5 },
-  { code: 'N-LOOP-RECHECK', name: '60天后：静默客户回捞', phase: '静默激活', desc: '检查是否有新的回关或意向', prev: 'N-LOOP-05', sla: 1440, type: 'once', track: 2, round: 6 }, 
-];
-
-// Track 2: Strike (Independent - NO AUTO-CHAIN)
-// FIX: Removed 'prev' to prevent auto-chaining.
-const TRACK_2_STRIKE_TEMPLATE = [
-  { code: 'S-LOOP-01', name: '识别重点攻坚', role: 'QH', phase: '重点攻坚', desc: 'CRM标记攻坚目标', sla: 48, type: 'once', track: 2 },
-  { code: 'S-LOOP-02', name: '定制轻方案', role: 'ZC', phase: '重点攻坚', desc: '针对性PPT/PDF', sla: 48, type: 'once', track: 2 },
-  { code: 'S-LOOP-03', name: '高管私信攻坚', role: 'TC', phase: '重点攻坚', desc: '发送方案给CEO', sla: 48, type: 'once', track: 2 },
-];
-
-const TRACK_3_TEMPLATE = [
-  { code: 'INT-01', name: '官网内容更新', role: 'ZC', phase: '内部建设', desc: 'SEO文章/白皮书', sla: 48, type: 'mwf', track: 3 },
-  { code: 'INT-02', name: 'Youtube更新', role: 'LE', phase: '内部建设', desc: '发布新视频', sla: 168, type: 'weekly', track: 3 },
-];
-
-// --- HELPERS ---
-const getNextDueDate = (type, pressure = 1.0) => {
-  const now = new Date();
-  const target = new Date(now);
-  target.setHours(10, 0, 0, 0); 
-  if (type === 'daily' || type === 'continuous') target.setDate(target.getDate() + 1);
-  else if (type === 'weekly') target.setDate(target.getDate() + 7);
-  else if (type === 'mwf') {
-    const day = target.getDay(); 
-    if (day === 1) target.setDate(target.getDate() + 2); 
-    else if (day === 3) target.setDate(target.getDate() + 2); 
-    else if (day === 5) target.setDate(target.getDate() + 3); 
-    else target.setDate(target.getDate() + 1);
-  } else target.setDate(target.getDate() + 1);
-  return target;
-};
-
-const getSlaDuration = (baseSlaHours, pressureMode) => {
-  const modifier = pressureMode ? 0.8 : 1.0;
-  return baseSlaHours * modifier * 3600000;
-};
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -144,21 +74,34 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const [pressureMode, setPressureMode] = useState(false);
   const [processingTasks, setProcessingTasks] = useState({});
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [newClientName, setNewClientName] = useState('');
   const [newClientDate, setNewClientDate] = useState(new Date().toISOString().split('T')[0]);
-  const [taskFilter, setTaskFilter] = useState('priority'); 
   const [expandedGroups, setExpandedGroups] = useState({});
 
+  // Modals
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
-  const [logModal, setLogModal] = useState({ show: false, task: null, content: '' });
-  const [leadModal, setLeadModal] = useState({ show: false, task: null, clientName: '', clientId: '', contact: '', note: '' });
   const [countryModal, setCountryModal] = useState({ show: false, task: null, country: '' });
+  const [ropeModal, setRopeModal] = useState({ show: false, task: null, date: '', time: '18:00' });
+  const [distModal, setDistModal] = useState({ show: false, task: null, quotas: { TC:0, ST:0, LE:0, ZC:0, XJ:0 } });
+  const [quotaModal, setQuotaModal] = useState({ show: false, task: null, addValue: '' });
+  
+  const [manualModal, setManualModal] = useState({ 
+    show: false, 
+    type: 'simple', 
+    name: '', 
+    quotas: { TC:0, ST:0, LE:0, ZC:0, XJ:0 }, 
+    date: '', 
+    time: '',
+    clientId: '' 
+  });
+
   const [toast, setToast] = useState(null);
 
+  // --- INIT & SYNC ---
   useEffect(() => {
     const initAuth = async () => {
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -168,60 +111,164 @@ export default function App() {
       }
     };
     initAuth();
-    onAuthStateChanged(auth, setUser);
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     if (!user) return;
-    const unsubTasks = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'tasks')), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setTasks(data);
-      setLoading(false);
-      // Pressure check: > 30 active ONCE tasks
-      const activeCount = data.filter(t => (t.status === 'pending' || t.status === 'in-progress') && t.type === 'once').length;
-      setPressureMode(activeCount > 30);
-    });
-    const unsubClients = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'clients'), orderBy('createdAt', 'desc')), (snap) => {
-      setClients(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    
+    const unsubTasks = onSnapshot(
+      collection(db, 'artifacts', appId, 'public', 'data', 'tasks'), 
+      (snap) => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setTasks(data);
+        setLoading(false);
+      },
+      (error) => console.error("Tasks listener error:", error)
+    );
+
+    const unsubClients = onSnapshot(
+      collection(db, 'artifacts', appId, 'public', 'data', 'clients'), 
+      (snap) => {
+        const clientList = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); 
+        
+        setClients(clientList);
+
+        clientList.forEach(client => {
+          const lastSync = client.lastSyncDate?.seconds 
+            ? new Date(client.lastSyncDate.seconds * 1000) 
+            : (client.createdAt?.seconds ? new Date(client.createdAt.seconds * 1000) : new Date());
+            
+          const now = new Date();
+          const daysDiff = (now - lastSync) / (1000 * 60 * 60 * 24);
+
+          if (daysDiff >= 14) {
+            const hasPendingSync = tasks.some(t => t.clientId === client.id && t.code === 'SYNC-REPORT' && t.status !== 'completed');
+            if (!hasPendingSync && user.uid && (currentRole === 'QH' || currentRole === 'FOUNDER')) { 
+               generateSyncReport(client, lastSync); 
+            }
+          }
+        });
+      },
+      (error) => console.error("Clients listener error:", error)
+    );
+
     return () => { unsubTasks(); unsubClients(); };
   }, [user]);
+
+  // --- NEW: Global Task Generator for ZC ---
+  useEffect(() => {
+    if (!user || loading) return;
+    
+    if (['ZC', 'FOUNDER', 'ALL'].includes(currentRole)) {
+        const hasGlobalSocial = tasks.some(t => t.id === 'GLOBAL-OP-SOCIAL');
+        if (!hasGlobalSocial) {
+            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', 'GLOBAL-OP-SOCIAL'), {
+                code: 'OP-SOCIAL',
+                name: '社媒矩阵运营',
+                role: 'ZC',
+                phase: '市场渗透',
+                desc: '矩阵日历自动生成中...',
+                clientId: 'GLOBAL',
+                clientName: 'SINOVA 全局',
+                status: 'pending',
+                isReady: true,
+                createdAt: serverTimestamp(),
+                burningDeadline: null,
+                type: 'daily' 
+            });
+        }
+    }
+  }, [tasks, user, loading, currentRole]);
 
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
 
+  // --- LOGIC FUNCTIONS ---
+
+  const generateSyncReport = async (client, lastSync) => {
+    const completedTasks = tasks.filter(t => 
+      t.clientId === client.id && 
+      t.status === 'completed' && 
+      t.completedAt?.seconds && 
+      new Date(t.completedAt.seconds * 1000) > lastSync
+    );
+    
+    // FIX: Generate detailed description
+    const details = completedTasks.map(t => {
+        const dateStr = new Date(t.completedAt.seconds * 1000).toLocaleDateString();
+        return `• ${t.name} (${t.role} - ${dateStr})`;
+    }).join('\n');
+
+    const desc = details ? `请同步以下近期进展：\n${details}` : '近期无重大节点完成，请同步常规进度。';
+    const taskId = `${client.id}-SYNC-${Date.now()}`;
+    
+    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
+       code: 'SYNC-REPORT', name: '双周进度同步', role: 'QH', phase: '全景管理',
+       desc: desc, clientId: client.id, clientName: client.name,
+       status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+    });
+  };
+
+  const getSocialDesc = (clientList) => {
+    const now = new Date();
+    const day = now.getDay(); 
+    
+    if (day === 2 || day === 4) return '🔥 今日重点：SINOVA 综合品牌宣传';
+    
+    if (day === 1 || day === 3 || day === 5) {
+        const validClients = clientList.filter(c => c.status === 'active');
+        if (validClients.length === 0) return '今日重点：暂无活跃客户';
+        
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff = now - start;
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
+        
+        const count = validClients.length;
+        const index = (dayOfYear * 3) % count; 
+        
+        let targets = [];
+        for (let i = 0; i < 3; i++) {
+            targets.push(validClients[(index + i) % count].name);
+        }
+        targets = [...new Set(targets)];
+        
+        return `🎯 今日重点：${targets.join('、')} (发布内容 + 同步分发)`;
+    }
+    
+    return '☕️ 今日重点：日常维护 / 周末休整';
+  };
+
   // --- ACTIONS ---
 
   const createClient = async () => {
-    if (!newClientName.trim() || isSubmitting) return; 
+    if (!newClientName.trim() || isSubmitting) return;
     setIsSubmitting(true);
     const clientId = `CLIENT-${Date.now()}`;
     const batch = writeBatch(db);
-
-    // Use selected date for start calculations
-    const startTimestamp = new Date(newClientDate); 
-    const timestamp = serverTimestamp(); 
+    const timestamp = serverTimestamp();
+    const startDateObj = new Date(newClientDate);
 
     batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId), {
       name: newClientName,
       createdAt: timestamp,
-      startDate: startTimestamp, 
+      startDate: startDateObj, 
       status: 'active',
-      progress: 0,
-      currentRound: 1
+      currentRound: 1,
+      lastSyncDate: timestamp
     });
 
     const starters = WORKFLOW_TEMPLATE.filter(t => !t.prev);
     starters.forEach(t => {
       const taskId = `${clientId}-${t.code}`;
-      // Calculate SLA based on historical start date
-      const slaTime = new Date(startTimestamp.getTime() + getSlaDuration(t.sla, pressureMode));
-      
       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
         ...t, clientId, clientName: newClientName, status: 'pending', isReady: true,
-        createdAt: timestamp, dueDate: slaTime, logs: []
+        createdAt: timestamp, burningDeadline: null, logs: []
       });
     });
 
@@ -232,419 +279,603 @@ export default function App() {
     showToast(`🚀 客户启动！`);
   };
 
-  const deleteClient = async (clientId, clientName) => {
-    if (!window.confirm(`⚠️ 确定要删除 [${clientName}] 及其所有任务吗？此操作不可撤销！`)) return;
-    
+  const setBurningRope = async () => {
+    const { task, date, time } = ropeModal;
+    if (!date || !time) return;
+    const deadline = new Date(`${date}T${time}`);
     const batch = writeBatch(db);
-    // Delete client
-    batch.delete(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId));
-    
-    // Delete all tasks
-    const clientTasks = tasks.filter(t => t.clientId === clientId);
-    clientTasks.forEach(t => {
-      batch.delete(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', t.id));
-    });
-
+    batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id), { burningDeadline: deadline });
     await batch.commit();
-    showToast(`🗑️ 客户已删除`);
+    setRopeModal({ show: false, task: null, date: '', time: '' });
+    showToast('🔥 燃烧绳已点燃');
   };
 
   const triggerNextTasks = (completedTask, existingTasks, batch) => {
-    // Filter Standard & Nurture. NOT Strike (they are manual/independent)
-    const nextSteps = [
-      ...WORKFLOW_TEMPLATE.filter(t => {
-        const prevs = Array.isArray(t.prev) ? t.prev : [t.prev];
-        return prevs.includes(completedTask.code);
-      }),
-      ...TRACK_2_NURTURE_TEMPLATE.filter(t => t.prev === completedTask.originalCode || t.prev === completedTask.code)
-    ];
-
-    nextSteps.forEach(nextT => {
-      const targetRole = nextT.track === 2 ? completedTask.role : nextT.role;
-      if (nextT.track === 2 && targetRole === 'XJ') return; 
-
-      const context = completedTask.context || null; 
-
-      const uniqueCode = nextT.track === 2 ? `${nextT.code}-${targetRole}` : nextT.code;
-      if (existingTasks.find(t => t.code === nextT.code && (nextT.track === 2 ? t.role === targetRole : true))) return;
-
-      let ready = true;
-      if (Array.isArray(nextT.prev)) {
-        ready = nextT.prev.every(code => {
-          if (code === completedTask.code) return true;
-          const sibling = existingTasks.find(t => t.code === code);
-          return sibling && sibling.status === 'completed';
-        });
-      }
-
-      if (ready) {
-        const taskId = `${completedTask.clientId}-${uniqueCode}`;
-        const now = new Date();
-        const duration = nextT.sla === 1440 ? (60 * 24 * 3600000) : getSlaDuration(nextT.sla, pressureMode);
-        
-        batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
-          ...nextT, 
-          role: targetRole, 
-          clientId: completedTask.clientId, clientName: completedTask.clientName,
-          status: 'pending', isReady: true, createdAt: serverTimestamp(),
-          dueDate: new Date(now.getTime() + duration), logs: [],
-          originalCode: nextT.code,
-          name: nextT.track === 2 ? `${nextT.name} (${targetRole}线)` : nextT.name,
-          context: context 
-        });
-      }
+    const standardNext = WORKFLOW_TEMPLATE.filter(t => t.prev === completedTask.code);
+    standardNext.forEach(nextT => {
+       const taskId = `${completedTask.clientId}-${nextT.code}`;
+       if (!existingTasks.find(t => t.code === nextT.code)) {
+         batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
+           ...nextT, clientId: completedTask.clientId, clientName: completedTask.clientName,
+           status: 'pending', isReady: true, createdAt: serverTimestamp(),
+           burningDeadline: null, logs: []
+         });
+       }
     });
-  };
 
-  const activateNurtureLoop = (clientName, clientId, batch, role) => {
-    if (role === 'XJ') return;
-    const startNode = TRACK_2_NURTURE_TEMPLATE[0];
-    const taskId = `${clientId}-${startNode.code}-${role}`;
-    batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
-      ...startNode, role: role, clientId, clientName, status: 'pending', isReady: true,
-      createdAt: serverTimestamp(), dueDate: getNextDueDate('daily'), logs: [],
-      originalCode: startNode.code, name: `${startNode.name} (${role}线)`
-    });
-    batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId), { currentRound: 2, nurtureActive: true });
-  };
+    if (completedTask.code === 'LB-CEO') {
+       const nextId = `${completedTask.clientId}-LB-CEO-AI`;
+       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', nextId), {
+         code: 'LB-CEO-AI', name: '老板数字人宣传片', role: 'LE', phase: '在地化基建',
+         desc: '制作老板数字人短视频', clientId: completedTask.clientId, clientName: completedTask.clientName,
+         status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+       });
+    }
 
-  const submitCountry = async () => {
-    const { task, country } = countryModal;
-    if (!country || isSubmitting) return; 
-    
-    // FIX: IMMEDIATE CLOSE & RESET
-    setIsSubmitting(true);
-    setCountryModal({ show: false, task: null, country: '' }); 
+    if (completedTask.code === 'MP-PRE-02') {
+       const distId = `${completedTask.clientId}-MP-DIST`;
+       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', distId), {
+         code: 'MP-DIST', name: '分配战役额度', role: 'QH', phase: '市场渗透',
+         desc: '为 TC/ST/LE/ZC/XJ 分配触达指标', clientId: completedTask.clientId, clientName: completedTask.clientName,
+         status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+       });
+    }
 
-    try {
-      const batch = writeBatch(db);
-      const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
-      const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'clients', task.clientId);
-      
-      const newName = `${task.clientName} - ${country}`;
-      batch.update(clientRef, { name: newName });
-      batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
-      
-      const clientTasks = tasks.filter(t => t.clientId === task.clientId);
-      triggerNextTasks({ ...task, clientName: newName }, clientTasks, batch); 
-      
-      await batch.commit();
-      showToast(`✅ 目标国 ${country} 已登记，任务流转中`);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSubmitting(false);
+    if (completedTask.code === 'INT-WEB-WRITING') {
+       const uploadId = `${completedTask.clientId}-INT-WEB-UPLOAD`;
+       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', uploadId), {
+         code: 'INT-WEB-UPLOAD', name: '官网上传更新', role: 'XJ', phase: '内部建设',
+         desc: '上传 ZC 的最新产出至 SINOVA 官网', clientId: completedTask.clientId, clientName: completedTask.clientName,
+         status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+       });
+    }
+
+    if (completedTask.code === 'MP-EXEC') {
+       const r2Id = `${completedTask.clientId}-N-LOOP-02-${completedTask.role}`;
+       const now = new Date();
+       const unlockDate = new Date(now.setDate(now.getDate() + 14));
+       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', r2Id), {
+         code: 'N-LOOP-02', name: `第2轮：发送解决方案`, role: completedTask.role, phase: '静默激活', desc: '发送《解决方案》',
+         clientId: completedTask.clientId, clientName: completedTask.clientName,
+         status: 'waiting', unlockAt: unlockDate, isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+       });
+    }
+    if (completedTask.code === 'N-LOOP-02') {
+       const r3Id = `${completedTask.clientId}-N-LOOP-03-${completedTask.role}`;
+       const now = new Date();
+       const unlockDate = new Date(now.setDate(now.getDate() + 14));
+       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', r3Id), {
+         code: 'N-LOOP-03', name: `第3轮：发送讲解视频`, role: completedTask.role, phase: '静默激活', desc: '发送视频内容',
+         clientId: completedTask.clientId, clientName: completedTask.clientName,
+         status: 'waiting', unlockAt: unlockDate, isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+       });
+    }
+    if (completedTask.code === 'N-LOOP-04') {
+       const reviewId = `${completedTask.clientId}-N-REVIEW`;
+       if (!existingTasks.find(t => t.id === reviewId)) {
+          batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', reviewId), {
+            code: 'N-REVIEW', name: '静默期复盘', role: 'QH', phase: '静默激活', desc: '复盘各条线静默效果',
+            clientId: completedTask.clientId, clientName: completedTask.clientName,
+            status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+          });
+       }
+    }
+    if (completedTask.code === 'N-REVIEW') {
+       ['TC', 'ST', 'LE', 'ZC'].forEach(role => {
+          const r5Id = `${completedTask.clientId}-N-LOOP-05-${role}`;
+          batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', r5Id), {
+            code: 'N-LOOP-05', name: `第5轮：最终全景激活`, role: role, phase: '静默激活', desc: '发送全景方案',
+            clientId: completedTask.clientId, clientName: completedTask.clientName,
+            status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+          });
+       });
     }
   };
 
-  const submitComplete = async (task) => {
-    // Intercept MT-03.5
-    if (task.code === 'MT-03.5') {
-      setCountryModal({ show: true, task, country: '' });
-      return;
-    }
-
+  const handleTaskAction = async (task, actionType, payload = null) => {
     setProcessingTasks(prev => ({ ...prev, [task.id]: true }));
+    const batch = writeBatch(db);
+    const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
+    const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'clients', task.clientId);
+
     try {
-      const batch = writeBatch(db);
-      const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
-      batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
-
-      // Fix: Define clientTasks before using it
-      const clientTasks = tasks.filter(t => t.clientId === task.clientId);
-
-      // FIX: Strike tasks (Track 2, no round) DO NOT trigger next tasks
-      if (task.track !== 2 || (task.track === 2 && task.round)) { 
-        triggerNextTasks(task, clientTasks, batch);
+      if (actionType === 'undo') {
+         batch.update(taskRef, { status: 'pending', completedAt: null });
+         showToast('↩️ 任务已还原');
       }
-
-      const milestones = clientTasks.filter(t => t.track === 1 && t.type === 'once');
-      const completedCount = milestones.filter(t => t.status === 'completed').length + (task.type==='once' && task.status!=='completed' ? 1 : 0);
-      const totalTemplateTasks = WORKFLOW_TEMPLATE.filter(t => t.track === 1 && t.type === 'once').length;
-      const progress = Math.round((completedCount / totalTemplateTasks) * 100);
-      
-      const updates = { progress };
-      if (task.track === 2 && task.round) updates.currentRound = task.round + 1; 
-      batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'clients', task.clientId), updates);
-
+      else if (task.id === 'GLOBAL-OP-SOCIAL') {
+         const tomorrow = new Date();
+         tomorrow.setDate(tomorrow.getDate() + 1);
+         tomorrow.setHours(10, 0, 0, 0); 
+         
+         batch.update(taskRef, { 
+             status: 'pending', 
+             burningDeadline: tomorrow,
+             logs: [...(task.logs||[]), {text: '完成今日运营', at: new Date().toISOString()}]
+         });
+         showToast('✅ 今日社媒任务已完成，已刷新为明日待办');
+      }
+      else if (task.code === 'MT-03.5') {
+         if (!payload) { setCountryModal({ show: true, task, country: '' }); setProcessingTasks(prev=>({...prev, [task.id]: false})); return; }
+         const newName = `${task.clientName} - ${payload}`;
+         batch.update(clientRef, { name: newName });
+         batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
+         const clientTasks = tasks.filter(t => t.clientId === task.clientId);
+         triggerNextTasks({ ...task, clientName: newName }, clientTasks, batch);
+      }
+      else if (task.code === 'LB-02-REVIEW') {
+         if (actionType === 'reject') {
+            const lb02 = tasks.find(t => t.clientId === task.clientId && t.code === 'LB-02');
+            if (lb02) batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', lb02.id), { status: 'pending', completedAt: null });
+            batch.update(taskRef, { status: 'pending', logs: [...(task.logs||[]), {text: 'QH驳回方案', at: new Date().toISOString()}] });
+         } else {
+            batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
+            const clientTasks = tasks.filter(t => t.clientId === task.clientId);
+            triggerNextTasks(task, clientTasks, batch);
+         }
+      }
+      else if (task.code === 'SYNC-REPORT') {
+         batch.update(clientRef, { lastSyncDate: serverTimestamp() });
+         batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
+      }
+      else if (task.output && task.code !== 'LB-CEO' && actionType !== 'force') {
+         setConfirmModal({
+            show: true,
+            title: '归档确认',
+            message: '⚠️ 此任务为交付节点，请确认已将文件上传至 NAS？',
+            onConfirm: () => {
+                handleTaskAction(task, 'force');
+                setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
+            }
+         });
+         setProcessingTasks(prev => ({ ...prev, [task.id]: false }));
+         return; 
+      }
+      else if (task.code === 'MP-DIST') {
+         if (!payload) { setDistModal({ show: true, task, quotas: { TC:0, ST:0, LE:0, ZC:0, XJ:0 } }); setProcessingTasks(prev=>({...prev, [task.id]: false})); return; }
+         Object.entries(payload).forEach(([role, quota]) => {
+            if (parseInt(quota) > 0) {
+               const execId = `${task.clientId}-MP-EXEC-${role}-${Date.now()}`;
+               batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', execId), {
+                  code: 'MP-EXEC', name: `本轮触达 ${role}`, role: role, type: 'quota',
+                  quotaTotal: parseInt(quota), quotaCurrent: 0,
+                  clientId: task.clientId, clientName: task.clientName,
+                  status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null
+               });
+            }
+         });
+         batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
+      }
+      else {
+         batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
+         const clientTasks = tasks.filter(t => t.clientId === task.clientId);
+         triggerNextTasks(task, clientTasks, batch);
+      }
       await batch.commit();
-      showToast(`✅ [${task.name}] 完成`);
-    } catch (e) { console.error(e); alert("操作失败"); } 
-    finally { setProcessingTasks(prev => ({ ...prev, [task.id]: false })); setConfirmModal({ ...confirmModal, show: false }); }
+      if (actionType !== 'undo' && task.id !== 'GLOBAL-OP-SOCIAL') showToast('✅ 任务更新');
+    } catch(e) { console.error(e); showToast('❌ 错误'); }
+    finally { setProcessingTasks(prev => ({ ...prev, [task.id]: false })); setConfirmModal({show:false, title:'', message:'', onConfirm:null}); }
   };
 
-  const submitCheckIn = async () => {
-    const { task, content } = logModal;
-    if (!task) return;
-    const batch = writeBatch(db);
-    const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
-    const nextDue = getNextDueDate(task.type, pressureMode);
-    batch.update(taskRef, {
-      dueDate: nextDue, lastCheckIn: serverTimestamp(),
-      logs: [...(task.logs || []), { text: content || "打卡", type: 'check-in', user: user.uid, userRole: currentRole, at: new Date().toISOString() }]
-    });
-    await batch.commit();
-    showToast(`📝 打卡成功`);
-    setLogModal({ show: false, task: null, content: '' });
+  const updateQuota = async () => {
+     const { task, addValue } = quotaModal;
+     if (!addValue || isNaN(addValue)) return;
+     const val = parseInt(addValue);
+     const newCurrent = (task.quotaCurrent || 0) + val;
+     const batch = writeBatch(db);
+     const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
+     batch.update(taskRef, { quotaCurrent: newCurrent });
+     if (newCurrent >= task.quotaTotal) {
+        batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
+        const clientTasks = tasks.filter(t => t.clientId === task.clientId);
+        triggerNextTasks(task, clientTasks, batch);
+     }
+     await batch.commit();
+     setQuotaModal({ show: false, task: null, addValue: '' });
+     showToast('📈 进度更新');
   };
 
-  const submitUndo = async (task) => {
-    const batch = writeBatch(db);
-    const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
-    batch.update(taskRef, { status: 'pending', completedAt: null });
-    await batch.commit();
-    showToast(`↩️ 撤回成功`);
-    setConfirmModal({ ...confirmModal, show: false });
-  };
-
-  const submitLead = async () => {
-    const { clientName, clientId, contact, note, task } = leadModal;
-    if (!contact || !note) return alert("请填写完整商机信息");
-    const batch = writeBatch(db);
-    
-    // Trigger Strike Tasks (One-time, Independent)
-    TRACK_2_STRIKE_TEMPLATE.forEach(t => {
-      const taskId = `${clientId}-${t.code}-${Date.now()}`; 
-      batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
-        ...t, clientId, clientName, status: 'pending', isReady: true,
-        createdAt: serverTimestamp(), dueDate: getNextDueDate('daily'), logs: [],
-        context: { contact, note, sourceRole: currentRole, sourceUser: user.uid, sourceTask: task?.name || '' }, 
-        originalCode: t.code
-      });
-    });
-
-    if (task) {
-      const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
-      batch.update(taskRef, {
-        logs: [...(task.logs || []), { text: `🔥 发现商机! 目标: ${contact} | 需求: ${note}`, type: 'lead', user: user.uid, userRole: currentRole, clientName, taskName: task.name, at: new Date().toISOString() }]
-      });
-    }
-    batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'clients', clientId), { track2Active: true });
-    await batch.commit();
-    showToast(`🔥 商机已登记`);
-    setLeadModal({ show: false, task: null, clientName: '', clientId: '', contact: '', note: '' });
-    setTaskFilter('track2');
-  };
-
-  const requestComplete = (task) => {
-    // Intercept MT-03.5 for Country Input
-    if (task.code === 'MT-03.5') {
-       setCountryModal({ show: true, task, country: '' });
-       return;
-    }
-
-    const isOnce = task.type === 'once';
-    const isOutreachEnd = ['MP-01', 'MP-03', 'MP-05'].includes(task.code);
-    setConfirmModal({
-      show: true,
-      title: isOnce ? `完成 [${task.name}]?` : `结束 [${task.name}] 阶段?`,
-      message: isOutreachEnd ? `注意：触达结束后，是否立即启动「静默激活循环 (${task.role}线)」?` : isOnce ? "触发后续工作流。" : "这将彻底关闭此任务。",
-      onConfirm: async () => {
-        if (isOutreachEnd) {
-           setProcessingTasks(prev => ({ ...prev, [task.id]: true }));
-           const batch = writeBatch(db);
-           activateNurtureLoop(task.clientName, task.clientId, batch, task.role);
-           const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', task.id);
-           batch.update(taskRef, { status: 'completed', completedAt: serverTimestamp() });
-           await batch.commit();
-           showToast(`✅ ${task.role}线静默激活已启动`);
-           setProcessingTasks(prev => ({ ...prev, [task.id]: false }));
-           setConfirmModal({ ...confirmModal, show: false });
-        } else submitComplete(task);
-      }
-    });
-  };
-
-  const requestUndo = (task) => setConfirmModal({ show: true, title: "撤回任务?", message: "恢复为待办。", onConfirm: () => submitUndo(task) });
-  const openLeadModal = (task) => setLeadModal({ show: true, task, clientName: task.clientName, clientId: task.clientId, contact: '', note: '' });
-
-  const generateInternalTasks = async () => {
-    const batch = writeBatch(db);
-    const clientId = 'INTERNAL_OPS';
-    TRACK_3_TEMPLATE.forEach(t => {
-      const taskId = `${clientId}-${t.code}`;
-      if (!tasks.find(x => x.id === taskId)) {
+  const manualTrigger = async (type, client) => {
+     const batch = writeBatch(db);
+     const timestamp = serverTimestamp();
+     if (type === 'LB-CEO') {
+        const taskId = `${client.id}-LB-CEO-${Date.now()}`;
         batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
-          ...t, clientId, clientName: '🏢 公司内部建设', status: 'pending', isReady: true,
-          createdAt: serverTimestamp(), dueDate: getNextDueDate(t.type), logs: []
+           code: 'LB-CEO', name: '老板实拍视频', role: 'LE', type: 'once', 
+           clientId: client.id, clientName: client.name, status: 'pending', isReady: true, createdAt: timestamp, burningDeadline: null
         });
-      }
-    });
-    await batch.commit();
-    showToast("🏢 内部任务已刷新");
+     } else if (type === 'SAT-UPDATE') {
+        const taskId = `${client.id}-SAT-UPDATE-${Date.now()}`;
+        batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
+           code: 'SAT-UPDATE', name: '私域内容更新', role: 'ZC', desc: `更新${client.name}卫星站的白皮书和GEO文章`,
+           clientId: client.id, clientName: client.name, status: 'pending', isReady: true, createdAt: timestamp, burningDeadline: null
+        });
+     } else if (type === 'NEXT-ROUND') {
+        batch.update(doc(db, 'artifacts', appId, 'public', 'data', 'clients', client.id), { currentRound: (client.currentRound||1) + 1 });
+        const taskId = `${client.id}-MP-PRE-01-R${(client.currentRound||1) + 1}`;
+        batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
+           code: 'MP-PRE-01', name: '企业穿刺 (新轮次)', role: 'TC', phase: '市场渗透', desc: '新一轮Top企业名单',
+           clientId: client.id, clientName: client.name, status: 'pending', isReady: true, createdAt: timestamp, burningDeadline: null
+        });
+     }
+     await batch.commit();
+     showToast('🚀 指令已下达');
+     setConfirmModal({show:false, title:'', message:'', onConfirm:null});
   };
 
-  // --- VIEWS ---
+  const handleManualSubmit = async () => {
+     const { type, name, quotas, date, time, clientId } = manualModal;
+     if (!name.trim()) return;
+
+     const batch = writeBatch(db);
+     const timestamp = serverTimestamp();
+     let deadline = null;
+     if (date && time) deadline = new Date(`${date}T${time}`);
+
+     let targetClientId = 'MANUAL';
+     let targetClientName = '临时任务';
+     if (clientId) {
+         const selectedClient = clients.find(c => c.id === clientId);
+         if (selectedClient) {
+             targetClientId = selectedClient.id;
+             targetClientName = selectedClient.name;
+         }
+     }
+
+     if (type === 'simple') {
+        const taskId = `MANUAL-${Date.now()}`;
+        batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId), {
+           name: name, role: currentRole, clientId: targetClientId, clientName: targetClientName, code: 'MANUAL',
+           status: 'pending', isReady: true, createdAt: timestamp, burningDeadline: deadline, type: 'once'
+        });
+     } else {
+        Object.entries(quotas).forEach(([role, val]) => {
+           if (parseInt(val) > 0) {
+              const execId = `MANUAL-EXEC-${role}-${Date.now()}`;
+              batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', execId), {
+                 code: 'MANUAL-EXEC', name: `${name} - ${role}`, role: role, type: 'quota',
+                 quotaTotal: parseInt(val), quotaCurrent: 0,
+                 clientId: targetClientId, clientName: targetClientName, 
+                 status: 'pending', isReady: true, createdAt: timestamp, burningDeadline: deadline
+              });
+           }
+        });
+     }
+
+     await batch.commit();
+     setManualModal({ show: false, type: 'simple', name: '', quotas: { TC:0, ST:0, LE:0, ZC:0, XJ:0 }, date: '', time: '', clientId: '' });
+     showToast('🚀 任务已下达');
+  };
+
+  // --- RENDERING ---
+
+  const renderBurningRope = (task) => {
+     if (!task.burningDeadline) return <button onClick={() => setRopeModal({ show: true, task, date: '', time: '18:00' })} className="mt-2 w-full border-2 border-dashed border-slate-300 text-slate-400 text-xs py-1 rounded hover:border-orange-400 hover:text-orange-500 flex items-center justify-center gap-1"><Bomb size={12}/> 🔥 设定燃烧绳</button>;
+     
+     const deadline = task.burningDeadline.seconds ? new Date(task.burningDeadline.seconds * 1000) : new Date();
+     const created = task.createdAt?.seconds ? new Date(task.createdAt.seconds * 1000) : new Date();
+     
+     const now = new Date();
+     const total = deadline - created;
+     const left = deadline - now;
+     let pct = Math.max(0, (left / total) * 100);
+     let color = 'bg-emerald-500';
+     if (pct < 50) color = 'bg-yellow-500';
+     if (pct < 20) color = 'bg-red-600';
+     const isBombed = now > deadline && task.status !== 'completed';
+     
+     return (
+        <div className="mt-2 w-full">
+           <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+              <span>{isBombed ? '已炸裂' : '燃烧中'}</span>
+              <span>{deadline.toLocaleDateString()}</span>
+           </div>
+           <div className="w-full h-2 bg-slate-100 rounded overflow-hidden relative">
+              <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${pct}%` }}></div>
+           </div>
+           {isBombed && <div className="absolute top-0 right-0 -mt-8 -mr-2 animate-bounce"><Bomb size={24} className="text-red-600 drop-shadow-lg"/></div>}
+        </div>
+     );
+  };
 
   const renderTaskItem = (task) => {
-    const isRecurring = ['continuous', 'daily', 'weekly', 'mwf'].includes(task.type);
-    const dueDate = task.dueDate ? new Date(task.dueDate.seconds * 1000) : null;
-    const isOverdue = dueDate && new Date() > dueDate;
-    const isProcessing = processingTasks[task.id];
     const isCompleted = task.status === 'completed';
-    const context = task.context;
+    const deadline = task.burningDeadline?.seconds ? new Date(task.burningDeadline.seconds * 1000) : null;
+    const completedAt = task.completedAt?.seconds ? new Date(task.completedAt.seconds * 1000) : null;
+    
+    const wasBombed = isCompleted && deadline && completedAt > deadline;
+    const isActiveBombed = !isCompleted && deadline && new Date() > deadline;
+    const isBombed = wasBombed || isActiveBombed;
+
+    const isLocked = task.status === 'waiting' && task.unlockAt?.seconds && new Date() < new Date(task.unlockAt.seconds * 1000);
+    const unlockDate = task.unlockAt?.seconds ? new Date(task.unlockAt.seconds * 1000) : null;
+    
+    const displayName = task.id === 'GLOBAL-OP-SOCIAL' ? getSocialDesc(clients) : task.name;
+    const isGlobalSocial = task.id === 'GLOBAL-OP-SOCIAL';
+
+    if (isLocked) {
+       return (
+          <div key={task.id} className="bg-slate-50 p-4 border border-slate-100 rounded-lg opacity-60 flex items-center gap-4 mb-2">
+             <Lock size={16} className="text-slate-400"/>
+             <div>
+                <h3 className="text-sm font-bold text-slate-500">{task.name}</h3>
+                <p className="text-xs text-slate-400">静默中... {unlockDate.toLocaleDateString()} 解锁</p>
+             </div>
+          </div>
+       );
+    }
 
     return (
-      <div key={task.id} className={`bg-white p-4 border-b border-slate-50 hover:bg-slate-50 transition-all flex items-start gap-4 group ${isOverdue && !isCompleted ? 'bg-red-50/30' : ''}`}>
+      <div key={task.id} className={`p-4 border-b transition-all flex items-start gap-4 relative ${isBombed ? 'bg-red-50 border-red-200' : 'bg-white border-slate-50 hover:bg-slate-50'}`}>
         <div className="pt-1">
-          {isCompleted ? (
-            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><CheckSquare size={16} /></div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {isRecurring && (
-                <button onClick={() => setLogModal({ show: true, task, content: '' })} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100" title="打卡"><FileText size={14}/></button>
-              )}
-              <button onClick={() => requestComplete(task)} disabled={isProcessing} className="w-8 h-8 rounded-full border-2 border-slate-300 text-slate-300 hover:border-emerald-500 hover:text-emerald-500 flex items-center justify-center" title={isRecurring ? "结束阶段" : "完成"}>
-                {isProcessing ? <Loader2 className="animate-spin" size={14}/> : isRecurring ? <ArrowRight size={14}/> : <CheckSquare size={14}/>}
-              </button>
-            </div>
-          )}
+           {isCompleted ? (
+              activeTab === 'history' ? 
+              <button onClick={() => handleTaskAction(task, 'undo')} className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center hover:bg-yellow-100 hover:text-yellow-600" title="撤销完成"><RotateCcw size={14}/></button>
+              : <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><CheckSquare size={16}/></div>
+           ) : task.type === 'quota' ? (
+              <div onClick={() => setQuotaModal({ show: true, task, addValue: '' })} className="cursor-pointer relative w-10 h-10 flex items-center justify-center">
+                 <svg className="w-full h-full transform -rotate-90">
+                    <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-slate-100" />
+                    <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-blue-600" strokeDasharray={100} strokeDashoffset={100 - ((task.quotaCurrent||0)/task.quotaTotal)*100} />
+                 </svg>
+                 <span className="absolute text-[8px] font-bold">{Math.round(((task.quotaCurrent||0)/task.quotaTotal)*100)}%</span>
+              </div>
+           ) : (
+             <button onClick={() => handleTaskAction(task, 'complete')} disabled={processingTasks[task.id]} className="w-8 h-8 rounded-full border-2 border-slate-300 text-slate-300 hover:border-emerald-500 hover:text-emerald-500 flex items-center justify-center">
+               {processingTasks[task.id] ? <Loader2 className="animate-spin" size={14}/> : <CheckSquare size={16}/>}
+             </button>
+           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-xs font-bold text-slate-400">{task.code}</span>
-            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">{task.clientName}</span>
-            {task.prev && !isCompleted && <span className="text-[10px] text-blue-400 bg-blue-50 px-1.5 py-0.5 rounded flex items-center"><ArrowUpRight size={10} className="mr-1"/> 承接上游</span>}
-            {isOverdue && !isCompleted && <span className="text-xs text-red-500 font-bold flex items-center"><AlertTriangle size={10} className="mr-1"/> 逾期</span>}
-            {task.track === 2 && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded flex items-center"><Zap size={8} className="mr-1"/> 攻坚</span>}
-            {task.round && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">第{task.round}轮</span>}
-          </div>
-          <h3 className={`font-bold text-sm text-slate-800 ${isCompleted ? 'line-through text-slate-400' : ''}`}>{task.name}</h3>
-          <p className="text-xs text-slate-500 mt-0.5">{task.desc}</p>
-          {context && (
-            <div className="mt-2 text-xs bg-purple-50 border border-purple-100 text-purple-800 p-2 rounded">
-              <div className="font-bold flex items-center gap-1 mb-1"><Flame size={12}/> 线索来源: {context.sourceRole} ({context.sourceTask})</div>
-              <div>🎯 目标: {context.contact}</div>
-              <div className="mt-1">📝 备注: {context.note}</div>
-            </div>
-          )}
-          {!isCompleted && (task.phase === '市场渗透' || task.phase === '线索转化' || task.phase === '静默激活') && (
-            <button onClick={() => openLeadModal(task)} className="mt-2 text-[10px] flex items-center gap-1 text-purple-600 border border-purple-100 px-2 py-0.5 rounded hover:bg-purple-50 transition-colors"><Flame size={10}/> 发现商机</button>
-          )}
-        </div>
-        <div className="text-right text-xs text-slate-400 pt-1 min-w-[80px]">
-          {dueDate && !isCompleted && <div className={isOverdue ? 'text-red-500 font-bold' : ''}>{dueDate.toLocaleDateString()}</div>}
-          {isCompleted && <span className="text-emerald-600">已完成</span>}
-          {/* FIX: Undo button in History/Completed */}
-          {isCompleted && activeTab === 'completed' && (
-            <button onClick={() => requestUndo(task)} className="ml-2 text-slate-400 hover:text-yellow-600 flex items-center gap-1"><RotateCcw size={12}/> 撤销</button>
-          )}
+           <div className="flex items-center gap-2 mb-1">
+             <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">{task.clientName}</span>
+             {isGlobalSocial && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1 rounded flex items-center"><Share2 size={8} className="mr-1"/> 矩阵同步</span>}
+             {task.code === 'LB-02-REVIEW' && !isCompleted && <button onClick={()=>handleTaskAction(task, 'reject')} className="text-[10px] bg-red-100 text-red-600 px-1 rounded hover:bg-red-200">驳回</button>}
+             {isBombed && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold flex items-center gap-1"><Bomb size={10}/> 炸弹</span>}
+           </div>
+           <h3 className={`font-bold text-sm ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+             {displayName}
+           </h3>
+           {task.code === 'SYNC-REPORT' ? (
+             <div className="text-xs text-slate-500 mt-0.5 whitespace-pre-line bg-slate-50 p-2 rounded border border-slate-100">{task.desc}</div>
+           ) : (
+             <p className="text-xs text-slate-500 mt-0.5">{task.desc}</p>
+           )}
+           {task.type === 'quota' && <div className="text-xs font-mono mt-1 text-blue-600">{task.quotaCurrent} / {task.quotaTotal}</div>}
+           {!isCompleted && renderBurningRope(task)}
+           {isCompleted && completedAt && <div className="text-[10px] text-slate-400 mt-1">完成于: {completedAt.toLocaleString()}</div>}
         </div>
       </div>
     );
   };
 
-  const renderGroupedTasks = (filtered) => {
-    const groups = filtered.reduce((acc, task) => {
-      const key = task.clientName || '其他';
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(task);
+  const renderGroupedTasks = (list) => {
+    const groups = list.reduce((acc, t) => {
+      const k = t.clientName || '其他';
+      if(!acc[k]) acc[k] = [];
+      acc[k].push(t);
       return acc;
     }, {});
-    const sortedGroups = Object.entries(groups).sort(([nameA, tasksA], [nameB, tasksB]) => {
-      const hasOverdueA = tasksA.some(t => t.dueDate && new Date(t.dueDate.seconds*1000) < new Date());
-      const hasOverdueB = tasksB.some(t => t.dueDate && new Date(t.dueDate.seconds*1000) < new Date());
-      if (hasOverdueA && !hasOverdueB) return -1;
-      if (!hasOverdueA && hasOverdueB) return 1;
-      return 0;
+    
+    const sortedKeys = Object.keys(groups).sort((a,b) => {
+        if(a === 'SINOVA 全局') return -1;
+        if(b === 'SINOVA 全局') return 1;
+        return 0;
     });
-    return sortedGroups.map(([clientName, clientTasks]) => {
-      const hasOverdue = clientTasks.some(t => t.dueDate && new Date(t.dueDate.seconds*1000) < new Date());
-      const isExpanded = expandedGroups[clientName] ?? (hasOverdue || taskFilter === 'priority' || taskFilter === 'track2');
+
+    return sortedKeys.map((name) => {
+      const groupTasks = groups[name];
+      const isExpanded = expandedGroups[name] ?? true; 
       return (
-        <div key={clientName} className={`bg-white rounded-xl border shadow-sm overflow-hidden mb-4 ${hasOverdue ? 'border-red-200' : 'border-slate-200'}`}>
-          <div className={`px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 ${hasOverdue ? 'bg-red-50' : 'bg-slate-50'}`} onClick={() => setExpandedGroups(prev => ({ ...prev, [clientName]: !isExpanded }))}>
-            <div className="font-bold text-slate-700 flex items-center gap-2">
-              {isExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
-              <Users size={16} className={hasOverdue ? 'text-red-500' : 'text-slate-400'}/>
-              {clientName}
-              <span className="text-xs font-normal text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">{clientTasks.length}</span>
-            </div>
-            {hasOverdue && <span className="text-xs text-red-600 font-bold flex items-center"><AlertCircle size={12} className="mr-1"/> 需关注</span>}
-          </div>
-          {isExpanded && <div>{clientTasks.map(task => renderTaskItem(task))}</div>}
+        <div key={name} className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4 shadow-sm">
+           <div onClick={() => setExpandedGroups(p => ({...p, [name]: !isExpanded}))} className="px-4 py-3 bg-slate-50 flex justify-between items-center cursor-pointer select-none">
+              <div className="font-bold text-slate-700 flex items-center gap-2">
+                 {isExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
+                 {name}
+                 <span className="text-xs font-normal text-slate-500 bg-white px-2 rounded-full border border-slate-200">{groupTasks.length}</span>
+              </div>
+           </div>
+           {isExpanded && <div>{groupTasks.map(renderTaskItem)}</div>}
         </div>
       );
     });
   };
 
-  const filteredTasks = useMemo(() => {
-    let list = tasks.filter(t => t.role === currentRole || currentRole === 'ALL' || t.role === 'ALL' || currentRole === 'FOUNDER');
-    list = list.filter(t => activeTab === 'completed' ? t.status === 'completed' : t.status !== 'completed');
-    if (taskFilter === 'urgent' && activeTab !== 'completed') {
-      const today = new Date(); today.setHours(23,59,59,999);
-      list = list.filter(t => t.dueDate && t.dueDate.seconds*1000 <= today.getTime());
-    } else if (taskFilter === 'track2') {
-      list = list.filter(t => t.track === 2);
-    }
-    return list.sort((a, b) => (a.dueDate?.seconds || Infinity) - (b.dueDate?.seconds || Infinity));
-  }, [tasks, currentRole, activeTab, taskFilter]);
+  const renderClientCard = (client) => {
+     const startDate = client.startDate?.seconds 
+       ? new Date(client.startDate.seconds * 1000) 
+       : (client.createdAt?.seconds ? new Date(client.createdAt.seconds * 1000) : new Date());
+     const weeks = Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24 * 7));
+     
+     const clientTasks = tasks.filter(t => t.clientId === client.id);
+     const activeTask = clientTasks.find(t => t.status === 'pending' || t.status === 'in-progress');
+     const stage = activeTask ? activeTask.phase : '待机中';
+     const isPrivUpdateStale = false; 
 
-  if (loading) return <div className="h-screen flex items-center justify-center text-slate-400">加载中...</div>;
+     return (
+        <div key={client.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+           <div className="flex justify-between items-start mb-4">
+              <div>
+                 <h3 className="font-bold text-lg flex items-center gap-2">{client.name}</h3>
+                 <div className="flex gap-2 text-xs mt-1">
+                    <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">入池第 {weeks} 周</span>
+                    <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{stage}</span>
+                 </div>
+              </div>
+              <button onClick={() => setConfirmModal({show:true, title:'拍摄老板', message:'生成LE任务？', onConfirm:()=>manualTrigger('LB-CEO', client)})} className="text-slate-400 hover:text-blue-600"><Camera size={18}/></button>
+           </div>
+           <div className="bg-slate-50 p-2 rounded mb-4 text-xs flex justify-between items-center">
+              <span className="text-slate-500">上周炸弹</span>
+              <span className="text-emerald-600 font-bold">✅ 表现良好</span>
+           </div>
+           <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setConfirmModal({show:true, title:'开启新轮', message:'Round+1 并触发企业穿刺？', onConfirm:()=>manualTrigger('NEXT-ROUND', client)})} disabled={currentRole!=='QH'} className="flex items-center justify-center gap-1 py-2 bg-slate-100 text-slate-600 rounded text-xs hover:bg-slate-200 disabled:opacity-50">
+                 <RefreshCw size={12}/> 开启新轮
+              </button>
+              <button onClick={() => setConfirmModal({show:true, title:'私域更新', message:'触发ZC更新卫星站？', onConfirm:()=>manualTrigger('SAT-UPDATE', client)})} className={`flex items-center justify-center gap-1 py-2 rounded text-xs border ${isPrivUpdateStale ? 'border-red-200 text-red-600 bg-red-50' : 'border-slate-200 text-slate-600'}`}>
+                 <Globe size={12}/> 私域更新
+              </button>
+           </div>
+        </div>
+     );
+  };
+
+  const filteredTasks = useMemo(() => {
+     let list = tasks.filter(t => currentRole === 'ALL' || t.role === currentRole || t.role === 'ALL');
+     if (activeTab === 'my-tasks') list = list.filter(t => t.status !== 'completed');
+     if (activeTab === 'history') list = list.filter(t => t.status === 'completed');
+     
+     return list.sort((a, b) => {
+        if (activeTab === 'history') return (b.completedAt?.seconds || 0) - (a.completedAt?.seconds || 0);
+        
+        const aBomb = a.burningDeadline?.seconds && new Date() > new Date(a.burningDeadline.seconds*1000);
+        const bBomb = b.burningDeadline?.seconds && new Date() > new Date(b.burningDeadline.seconds*1000);
+        if (aBomb && !bBomb) return -1;
+        if (!aBomb && bBomb) return 1;
+        return (a.burningDeadline?.seconds || Infinity) - (b.burningDeadline?.seconds || Infinity);
+     });
+  }, [tasks, currentRole, activeTab]);
+
+  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-slate-400"/></div>;
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
       <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen fixed left-0 top-0 z-10 shadow-xl">
         <div className="p-6 border-b border-slate-800">
           <h1 className="text-lg font-bold text-white flex items-center gap-2"><Activity className="text-blue-500"/> 粤新链·指挥台</h1>
-          <p className="text-[10px] mt-1 text-slate-500">V38.0 终极完美交付版</p>
-          <div className={`mt-4 p-2 rounded flex items-center gap-2 text-xs font-bold ${pressureMode ? 'bg-red-900/50 text-red-400 animate-pulse' : 'bg-slate-800 text-emerald-400'}`}>
-            <Gauge size={14}/> {pressureMode ? '高压模式' : '系统负载正常'}
-          </div>
+          <p className="text-[10px] mt-1 text-slate-500">V38.5 Clean</p>
         </div>
         <nav className="flex-1 px-4 space-y-2 mt-6">
-          {[
-            { id: 'my-tasks', label: '我的待办', icon: CheckSquare },
-            { id: 'logs', label: '全局日志', icon: ScrollText, roles: ['FOUNDER', 'XJ', 'QH'] },
-            { id: 'clients', label: '客户全景', icon: Users },
-            { id: 'completed', label: '历史归档', icon: History },
-          ].map(item => ((!item.roles || item.roles.includes(currentRole)) && <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === item.id ? 'bg-blue-600 text-white' : 'hover:bg-slate-800'}`}><item.icon size={18} /> {item.label}</button>))}
+          <button onClick={() => setActiveTab('my-tasks')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'my-tasks' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800'}`}><CheckSquare size={18} /> 我的待办</button>
+          <button onClick={() => setActiveTab('clients')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'clients' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800'}`}><Users size={18} /> 客户全景</button>
+          <button onClick={() => setActiveTab('history')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800'}`}><History size={18} /> 任务记录</button>
         </nav>
         <div className="p-4 border-t border-slate-800">
           <select value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} className="w-full bg-slate-800 text-white text-xs p-2 rounded border border-slate-700">{ROLES.map(r => <option key={r} value={r}>{r}</option>)}</select>
         </div>
       </div>
+
       <main className="ml-64 flex-1 overflow-y-auto p-8">
         {toast && <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded shadow-xl z-50 animate-fade-in">{toast}</div>}
-        {activeTab === 'logs' && (
-          <div className="max-w-3xl mx-auto space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><ScrollText/> 全局作业日志</h2>
-            {tasks.flatMap(t => (t.logs || []).map(l => ({...l, taskName: t.name, clientName: t.clientName}))).sort((a,b)=>new Date(b.at)-new Date(a.at)).map((log, i) => (
-              <div key={i} className={`p-4 rounded-xl border shadow-sm text-sm ${log.type === 'lead' ? 'bg-purple-50 border-purple-200' : 'bg-white'}`}>
-                <div className="font-bold flex justify-between"><span>{log.clientName} - {log.taskName}</span><span className="font-normal text-slate-400">{new Date(log.at).toLocaleString()}</span></div>
-                <div className={`mt-1 ${log.type === 'lead' ? 'text-purple-800 font-medium' : 'text-slate-600'}`}>{log.type === 'lead' && <Flame size={12} className="inline mr-1"/>}<span className="font-bold text-slate-700 mr-2">[{log.userRole}]</span>{log.text}</div>
+
+        {(activeTab === 'my-tasks' || activeTab === 'history') && (
+           <div className="max-w-3xl mx-auto">
+              <header className="mb-6 flex justify-between items-center">
+                 <h2 className="text-xl font-bold">{activeTab === 'my-tasks' ? '我的待办' : '历史归档'}</h2>
+                 {activeTab === 'my-tasks' && <div className="flex gap-2">
+                    <button onClick={() => setManualModal({...manualModal, show: true})} className="bg-slate-900 text-white px-3 py-1 rounded text-sm flex items-center gap-1"><Plus size={14}/> 临时任务</button>
+                 </div>}
+              </header>
+              <div className="space-y-4">
+                 {filteredTasks.length === 0 && <div className="text-center text-slate-400 py-10">无数据</div>}
+                 {renderGroupedTasks(filteredTasks)}
               </div>
-            ))}
-          </div>
+           </div>
         )}
-        {(activeTab === 'my-tasks' || activeTab === 'completed') && (
-          <div className="max-w-5xl mx-auto space-y-4">
-            <header className="mb-4 flex justify-between items-center"><h2 className="text-xl font-bold text-slate-800">{activeTab === 'completed' ? '已归档任务' : '待办流水线'}</h2><div className="flex gap-1 bg-slate-100 p-1 rounded"><button onClick={() => setTaskFilter('priority')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'priority' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}>全部</button><button onClick={() => setTaskFilter('urgent')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'urgent' ? 'bg-white shadow text-red-600' : 'text-slate-500'}`}>急件</button><button onClick={() => setTaskFilter('track2')} className={`px-3 py-1 text-xs rounded ${taskFilter === 'track2' ? 'bg-white shadow text-purple-600' : 'text-slate-500'}`}>攻坚</button></div></header>
-            {renderGroupedTasks(filteredTasks)}
-          </div>
+
+        {activeTab === 'clients' && (
+           <div className="max-w-5xl mx-auto">
+              <header className="mb-6 flex justify-between items-center">
+                 <h2 className="text-xl font-bold">客户全景</h2>
+                 {(['FOUNDER','XJ','QH'].includes(currentRole)) && (
+                    <button onClick={() => setShowNewClientModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"><Plus size={18}/> 新签约</button>
+                 )}
+              </header>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 {clients.map(renderClientCard)}
+              </div>
+           </div>
         )}
-        {activeTab === 'clients' && <div className="max-w-5xl mx-auto space-y-6"><header className="flex justify-between items-center"><h2 className="text-2xl font-bold">客户全景</h2><button onClick={() => setShowNewClientModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded shadow"><Plus size={18}/> 新签约</button></header><div className="grid gap-4">{clients.map(c => {
-           // Monthly Review Logic
-           const daysActive = Math.floor((new Date() - new Date(c.createdAt?.seconds*1000)) / (1000*60*60*24));
-           const needsReview = daysActive > 0 && daysActive % 30 === 0;
-           return (
-             <div key={c.id} className="bg-white p-6 rounded-xl border shadow-sm relative">
-               {needsReview && <span className="absolute top-2 right-2 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"><Calendar size={12}/> 需月度复盘</span>}
-               <button onClick={() => deleteClient(c.id, c.name)} className="absolute top-2 right-28 text-slate-300 hover:text-red-500 p-1"><Trash2 size={14}/></button>
-               <div className="flex justify-between"><h3 className="font-bold">{c.name}</h3><div className="text-xs text-slate-400">入池第 {Math.ceil((new Date()-new Date(c.startDate?.seconds*1000))/(1000*60*60*24*7))} 周</div></div><div className="flex gap-2 mt-1 text-xs"><span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Round: {c.currentRound || 1}</span></div><div className="w-full h-2 bg-slate-100 rounded mt-2"><div className="h-full bg-blue-500" style={{width: `${c.progress}%`}}></div></div></div>
-           )
-        })}</div></div>}
       </main>
-      {confirmModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-2">{confirmModal.title}</h3><p className="text-sm text-slate-500 mb-6">{confirmModal.message}</p><div className="flex justify-end gap-3"><button onClick={() => setConfirmModal({...confirmModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={confirmModal.onConfirm} className="px-4 py-2 bg-blue-600 text-white rounded">确认</button></div></div></div>}
+
+      {/* --- MODALS --- */}
+      {confirmModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-2">{confirmModal.title}</h3><p className="text-sm text-slate-500 mb-6">{confirmModal.message}</p><div className="flex justify-end gap-3"><button onClick={() => setConfirmModal({...confirmModal, show:false, title:'', message:'', onConfirm:null})} className="px-4 py-2 text-slate-500">取消</button><button onClick={confirmModal.onConfirm} className="px-4 py-2 bg-blue-600 text-white rounded">确认</button></div></div></div>}
+
+      {/* NEW: Manual Task Modal with Client ID */}
+      {manualModal.show && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Target className="text-blue-500"/> 发起临时任务</h3>
+            
+            <div className="flex gap-4 mb-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" checked={manualModal.type === 'simple'} onChange={() => setManualModal({...manualModal, type: 'simple'})} />
+                <span className={manualModal.type === 'simple' ? 'font-bold text-slate-800' : 'text-slate-500'}>执行任务</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" checked={manualModal.type === 'quota'} onChange={() => setManualModal({...manualModal, type: 'quota'})} />
+                <span className={manualModal.type === 'quota' ? 'font-bold text-slate-800' : 'text-slate-500'}>穿刺战役</span>
+              </label>
+            </div>
+
+            <div className="space-y-4">
+              {/* Client Selection */}
+              <select 
+                className="w-full border p-3 rounded bg-white text-sm"
+                value={manualModal.clientId} 
+                onChange={e => setManualModal({...manualModal, clientId: e.target.value})}
+              >
+                <option value="">-- 关联客户 (可选) --</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+
+              <input 
+                className="w-full border p-3 rounded" 
+                placeholder={manualModal.type === 'simple' ? "任务名称" : "战役名称 (如: 某某客户突击)"} 
+                value={manualModal.name} 
+                onChange={e => setManualModal({...manualModal, name: e.target.value})} 
+              />
+              
+              {manualModal.type === 'quota' && (
+                <div className="bg-slate-50 p-3 rounded border border-slate-100">
+                  <div className="text-xs font-bold text-slate-400 mb-2">触达指标分配</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['TC','ST','LE','ZC','XJ'].map(r => (
+                      <div key={r} className="flex items-center justify-between">
+                        <label className="text-xs font-bold w-8">{r}</label>
+                        <input 
+                          type="number" 
+                          className="border p-1 rounded w-full text-xs" 
+                          placeholder="0" 
+                          onChange={e => setManualModal(prev => ({...prev, quotas: {...prev.quotas, [r]: e.target.value}}))} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-slate-100 pt-3">
+                <div className="text-xs font-bold text-slate-400 mb-2 flex items-center gap-1"><Bomb size={12}/> 燃烧绳 (选填)</div>
+                <div className="flex gap-2">
+                  <input type="date" className="w-full border p-2 rounded text-xs" value={manualModal.date} onChange={e => setManualModal({...manualModal, date: e.target.value})} />
+                  <input type="time" className="w-full border p-2 rounded text-xs" value={manualModal.time} onChange={e => setManualModal({...manualModal, time: e.target.value})} />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button onClick={() => setManualModal({...manualModal, show: false})} className="px-4 py-2 text-slate-500">取消</button>
+              <button onClick={handleManualSubmit} className="px-4 py-2 bg-slate-900 text-white rounded">下达指令</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FIX: New Client Modal with Date Input */}
       {showNewClientModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-8 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-4">新客户签约</h3>
       <div className="space-y-4">
-        <input className="w-full border p-3 rounded mb-6" placeholder="客户全称" value={newClientName} onChange={e=>setNewClientName(e.target.value)} autoFocus />
-        <div><label className="text-xs text-slate-500">签约时间 (支持补录)</label><input type="date" className="w-full border p-3 rounded" value={newClientDate} onChange={e=>setNewClientDate(e.target.value)} /></div>
+        <input className="w-full border p-3 rounded" placeholder="客户全称" value={newClientName} onChange={e=>setNewClientName(e.target.value)} autoFocus />
+        <div><label className="text-xs text-slate-500">签约/入池时间 (支持补录)</label><input type="date" className="w-full border p-3 rounded" value={newClientDate} onChange={e=>setNewClientDate(e.target.value)} /></div>
       </div>
-      <div className="flex justify-end gap-2 mt-6"><button onClick={() => setShowNewClientModal(false)} disabled={isSubmitting} className="px-4 py-2 text-slate-500">取消</button><button onClick={createClient} disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded flex items-center gap-2">{isSubmitting && <Loader2 className="animate-spin" size={16}/>} 启动</button></div></div></div>}
-      {leadModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[500px] shadow-2xl"><h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Flame className="text-purple-500"/> 商机登记卡</h3><div className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1">目标客户</label><input className="w-full border p-2 rounded" placeholder="例如: CEO John Doe" value={leadModal.contact} onChange={e=>setLeadModal({...leadModal, contact: e.target.value})} autoFocus/></div><div><label className="block text-xs font-bold text-slate-500 mb-1">需求备注</label><textarea className="w-full border p-2 rounded h-24 resize-none" placeholder="详情..." value={leadModal.note} onChange={e=>setLeadModal({...leadModal, note: e.target.value})} /></div></div><div className="flex justify-end gap-2 mt-6"><button onClick={() => setLeadModal({...leadModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={submitLead} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">登记并启动攻坚</button></div></div></div>}
-      {countryModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Globe className="text-blue-500"/> 确认主攻国</h3><input className="w-full border p-3 rounded mb-4" placeholder="例如: 美国" value={countryModal.country} onChange={e=>setCountryModal({...countryModal, country: e.target.value})} autoFocus /><div className="flex justify-end gap-2"><button onClick={() => setCountryModal({...countryModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={submitCountry} disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded">确认并变更客户名</button></div></div></div>}
-      {logModal.show && logModal.task && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[500px] shadow-2xl"><h3 className="text-lg font-bold mb-4">📝 {logModal.task.name} - 日常打卡</h3><textarea className="w-full border p-3 rounded mb-4 h-32 resize-none" placeholder="今日进展..." value={logModal.content} onChange={e=>setLogModal({...logModal, content: e.target.value})} autoFocus /><div className="flex justify-end gap-2"><button onClick={() => setLogModal({...logModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={submitCheckIn} className="px-4 py-2 bg-blue-600 text-white rounded">确认</button></div></div></div>}
+      <div className="flex justify-end gap-2 mt-6"><button onClick={() => setShowNewClientModal(false)} className="px-4 py-2 text-slate-500">取消</button><button onClick={createClient} disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded flex items-center gap-2">{isSubmitting && <Loader2 className="animate-spin" size={16}/>} 启动</button></div></div></div>}
+      
+      {countryModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Globe className="text-blue-500"/> 确认主攻国</h3><input className="w-full border p-3 rounded mb-4" placeholder="例如: 美国" value={countryModal.country} onChange={e=>setCountryModal({...countryModal, country: e.target.value})} autoFocus /><div className="flex justify-end gap-2"><button onClick={() => setCountryModal({...countryModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={() => handleTaskAction(countryModal.task, 'complete', countryModal.country)} className="px-4 py-2 bg-blue-600 text-white rounded">确认并更名</button></div></div></div>}
+      {ropeModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Bomb className="text-red-500"/> 设定燃烧绳</h3><div className="space-y-4"><input type="date" className="w-full border p-3 rounded" value={ropeModal.date} onChange={e=>setRopeModal({...ropeModal, date: e.target.value})} /><input type="time" className="w-full border p-3 rounded" value={ropeModal.time} onChange={e=>setRopeModal({...ropeModal, time: e.target.value})} /></div><div className="flex justify-end gap-2 mt-6"><button onClick={() => setRopeModal({...ropeModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={setBurningRope} className="px-4 py-2 bg-red-600 text-white rounded">点燃</button></div></div></div>}
+      {distModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[400px] shadow-2xl"><h3 className="text-lg font-bold mb-4 flex items-center gap-2"><CrosshairIcon className="text-purple-500"/> 分配战役额度</h3><div className="space-y-3">{['TC','ST','LE','ZC','XJ'].map(r=><div key={r} className="flex items-center justify-between"><label className="font-bold w-12">{r}</label><input type="number" className="border p-2 rounded w-48" placeholder="触达数量" onChange={e=>setDistModal(prev=>({...prev, quotas: {...prev.quotas, [r]: e.target.value}}))} /></div>)}</div><div className="flex justify-end gap-2 mt-6"><button onClick={() => setDistModal({...distModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={() => handleTaskAction(distModal.task, 'complete', distModal.quotas)} className="px-4 py-2 bg-purple-600 text-white rounded">发布战役</button></div></div></div>}
+      {quotaModal.show && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm"><div className="bg-white p-6 rounded-xl w-[300px] shadow-2xl"><h3 className="text-lg font-bold mb-4">汇报进度</h3><input type="number" className="w-full border p-3 rounded mb-4" placeholder="今日新增数量" value={quotaModal.addValue} onChange={e=>setQuotaModal({...quotaModal, addValue: e.target.value})} autoFocus /><div className="flex justify-end gap-2"><button onClick={() => setQuotaModal({...quotaModal, show:false})} className="px-4 py-2 text-slate-500">取消</button><button onClick={updateQuota} className="px-4 py-2 bg-blue-600 text-white rounded">更新</button></div></div></div>}
     </div>
   );
 }
+
+function CrosshairIcon(props) { return <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>}
