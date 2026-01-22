@@ -30,10 +30,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
+
 // --- CONSTANTS ---
 const ROLES = ['FOUNDER', 'XJ', 'ST', 'TC', 'QH', 'LE', 'ZC', 'ALL'];
 
-// --- WORKFLOW TEMPLATE (V38.5 Clean) ---
+// --- WORKFLOW TEMPLATE (V38.6 Stats & Fixes) ---
 const WORKFLOW_TEMPLATE = [
   // Launch
   { code: 'L-01', name: '确认签约', role: 'XJ', phase: '签约启动', desc: '看板客户卡片建立', type: 'once' },
@@ -65,6 +66,23 @@ const WORKFLOW_TEMPLATE = [
   // Internal/Ops
   { code: 'INT-WEB-WRITING', name: '白皮书/GEO文章', role: 'ZC', phase: '内部建设', desc: '撰写内容', type: 'once', prev: 'MT-04' },
 ];
+
+// --- Helper Functions for Dates ---
+const getStartOfWeek = (d) => {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday start
+  date.setDate(diff);
+  date.setHours(0,0,0,0);
+  return date;
+};
+
+const getStartOfMonth = (d) => {
+  const date = new Date(d);
+  date.setDate(1);
+  date.setHours(0,0,0,0);
+  return date;
+};
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -104,10 +122,14 @@ export default function App() {
   // --- INIT & SYNC ---
   useEffect(() => {
     const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth failed:", error);
       }
     };
     initAuth();
@@ -183,6 +205,44 @@ export default function App() {
     }
   }, [tasks, user, loading, currentRole]);
 
+  // --- BOMB STATISTICS (NEW) ---
+  const bombStats = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = getStartOfWeek(now);
+    const startOfMonth = getStartOfMonth(now);
+    
+    let weekly = 0;
+    let monthly = 0;
+
+    tasks.forEach(task => {
+        // Filter stats by current view role
+        if (currentRole !== 'ALL' && currentRole !== 'FOUNDER' && task.role !== currentRole) return;
+        
+        // Skip tasks without deadlines
+        if (!task.burningDeadline?.seconds) return;
+        
+        const deadline = new Date(task.burningDeadline.seconds * 1000);
+        const completedAt = task.completedAt?.seconds ? new Date(task.completedAt.seconds * 1000) : null;
+        const isCompleted = task.status === 'completed';
+
+        let isBombed = false;
+        // Logic: Bombed if completed AFTER deadline OR if active and deadline PASSED
+        if (isCompleted) {
+            if (completedAt > deadline) isBombed = true;
+        } else {
+            if (now > deadline) isBombed = true;
+        }
+
+        if (isBombed) {
+            // Count if the EXPLOSION TIME (deadline) was within the window
+            if (deadline >= startOfWeek) weekly++;
+            if (deadline >= startOfMonth) monthly++;
+        }
+    });
+
+    return { weekly, monthly };
+  }, [tasks, currentRole]);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
@@ -198,7 +258,6 @@ export default function App() {
       new Date(t.completedAt.seconds * 1000) > lastSync
     );
     
-    // FIX: Generate detailed description
     const details = completedTasks.map(t => {
         const dateStr = new Date(t.completedAt.seconds * 1000).toLocaleDateString();
         return `• ${t.name} (${t.role} - ${dateStr})`;
@@ -384,16 +443,15 @@ export default function App() {
          showToast('↩️ 任务已还原');
       }
       else if (task.id === 'GLOBAL-OP-SOCIAL') {
-         const tomorrow = new Date();
-         tomorrow.setDate(tomorrow.getDate() + 1);
-         tomorrow.setHours(10, 0, 0, 0); 
+         // FIX: Use 24h Countdown logic (reset to 24h later)
+         const next24h = new Date(Date.now() + 24 * 60 * 60 * 1000);
          
          batch.update(taskRef, { 
              status: 'pending', 
-             burningDeadline: tomorrow,
-             logs: [...(task.logs||[]), {text: '完成今日运营', at: new Date().toISOString()}]
+             burningDeadline: next24h,
+             logs: [...(task.logs||[]), {text: '完成今日运营，续命24h', at: new Date().toISOString()}]
          });
-         showToast('✅ 今日社媒任务已完成，已刷新为明日待办');
+         showToast('✅ 任务完成，自动续命24小时');
       }
       else if (task.code === 'MT-03.5') {
          if (!payload) { setCountryModal({ show: true, task, country: '' }); setProcessingTasks(prev=>({...prev, [task.id]: false})); return; }
@@ -752,6 +810,22 @@ export default function App() {
         </nav>
         <div className="p-4 border-t border-slate-800">
           <select value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} className="w-full bg-slate-800 text-white text-xs p-2 rounded border border-slate-700">{ROLES.map(r => <option key={r} value={r}>{r}</option>)}</select>
+        </div>
+        
+        {/* BOMB STATS PANEL */}
+        <div className="mt-4 mx-4 p-3 bg-slate-800 rounded-lg border border-slate-700 mb-6">
+          <div className="text-xs text-slate-400 mb-2 flex items-center gap-1"><Bomb size={12} className="text-red-500"/> 炸弹统计</div>
+          <div className="flex justify-between text-center">
+            <div>
+              <div className="text-lg font-bold text-white">{bombStats.weekly}</div>
+              <div className="text-[10px] text-slate-500">本周</div>
+            </div>
+            <div className="w-px bg-slate-700 mx-2"></div>
+            <div>
+              <div className="text-lg font-bold text-white">{bombStats.monthly}</div>
+              <div className="text-[10px] text-slate-500">本月</div>
+            </div>
+          </div>
         </div>
       </div>
 
