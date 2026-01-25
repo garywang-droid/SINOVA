@@ -515,14 +515,42 @@ export default function App() {
          batch.update(taskRef, { status: 'pending', completedAt: null });
          showToast('↩️ 任务已还原');
       }
+     // --- START of new code (replace the block above) ---
       else if (task.id === 'GLOBAL-OP-SOCIAL') {
-         const next24h = new Date(Date.now() + 24 * 60 * 60 * 1000);
+         const now = new Date();
+         const day = now.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+         
+         let nextBusinessDay = new Date(now);
+
+         // If today is Friday (5), next task is on Monday (+3 days)
+         if (day === 5) {
+            nextBusinessDay.setDate(now.getDate() + 3);
+         } 
+         // If today is Saturday (6), next task is on Monday (+2 days)
+         else if (day === 6) {
+            nextBusinessDay.setDate(now.getDate() + 2);
+         }
+         // Otherwise, next task is tomorrow
+         else {
+            nextBusinessDay.setDate(now.getDate() + 1);
+         }
+
+         // Set the time for the next task's appearance and deadline
+         const unlockTime = new Date(nextBusinessDay);
+         unlockTime.setHours(4, 0, 0, 0); // Re-appear at 4 AM
+
+         const deadlineTime = new Date(nextBusinessDay);
+         deadlineTime.setHours(18, 0, 0, 0); // Deadline is 6 PM
+
          batch.update(taskRef, { 
-             status: 'pending', 
-             burningDeadline: next24h,
-             logs: [...(task.logs||[]), {text: '完成今日运营，续命24h', at: new Date().toISOString()}]
+             status: 'waiting', // Set to 'waiting' to hide it for today
+             unlockAt: unlockTime,
+             burningDeadline: deadlineTime,
+             logs: [...(task.logs||[]), {text: `于 ${now.toLocaleString()} 完成`, at: now.toISOString()}]
          });
-         showToast('✅ 任务完成，自动续命24小时');
+         showToast('✅ 今日社媒运营完成！下个工作日将自动重置。');
+      }
+// --- END of new code ---
       }
       else if (task.code === 'MT-03.5') {
          if (!payload) { setCountryModal({ show: true, task, country: '' }); setProcessingTasks(prev=>({...prev, [task.id]: false})); return; }
@@ -1025,3 +1053,4 @@ export default function App() {
 }
 
 function CrosshairIcon(props) { return <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>}
+
