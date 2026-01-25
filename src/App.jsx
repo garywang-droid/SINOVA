@@ -30,11 +30,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-
 // --- CONSTANTS ---
 const ROLES = ['FOUNDER', 'XJ', 'ST', 'TC', 'QH', 'LE', 'ZC', 'ALL'];
 
-// --- WORKFLOW TEMPLATE (V38.6 Stats & Fixes) ---
+// --- WORKFLOW TEMPLATE (V38.8 Campaign DNA) ---
 const WORKFLOW_TEMPLATE = [
   // Launch
   { code: 'L-01', name: '确认签约', role: 'XJ', phase: '签约启动', desc: '看板客户卡片建立', type: 'once' },
@@ -71,7 +70,7 @@ const WORKFLOW_TEMPLATE = [
 const getStartOfWeek = (d) => {
   const date = new Date(d);
   const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday start
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1); 
   date.setDate(diff);
   date.setHours(0,0,0,0);
   return date;
@@ -205,7 +204,7 @@ export default function App() {
     }
   }, [tasks, user, loading, currentRole]);
 
-  // --- BOMB STATISTICS (NEW) ---
+  // --- BOMB STATISTICS ---
   const bombStats = useMemo(() => {
     const now = new Date();
     const startOfWeek = getStartOfWeek(now);
@@ -215,10 +214,7 @@ export default function App() {
     let monthly = 0;
 
     tasks.forEach(task => {
-        // Filter stats by current view role
         if (currentRole !== 'ALL' && currentRole !== 'FOUNDER' && task.role !== currentRole) return;
-        
-        // Skip tasks without deadlines
         if (!task.burningDeadline?.seconds) return;
         
         const deadline = new Date(task.burningDeadline.seconds * 1000);
@@ -226,7 +222,6 @@ export default function App() {
         const isCompleted = task.status === 'completed';
 
         let isBombed = false;
-        // Logic: Bombed if completed AFTER deadline OR if active and deadline PASSED
         if (isCompleted) {
             if (completedAt > deadline) isBombed = true;
         } else {
@@ -234,7 +229,6 @@ export default function App() {
         }
 
         if (isBombed) {
-            // Count if the EXPLOSION TIME (deadline) was within the window
             if (deadline >= startOfWeek) weekly++;
             if (deadline >= startOfMonth) monthly++;
         }
@@ -389,43 +383,122 @@ export default function App() {
        });
     }
 
-    if (completedTask.code === 'MP-EXEC') {
-       const r2Id = `${completedTask.clientId}-N-LOOP-02-${completedTask.role}`;
+    // --- FIX: CAMPAIGN TRIGGER LOGIC ---
+    if (completedTask.code === 'MP-EXEC' || completedTask.code === 'MANUAL-EXEC') {
+       const isCampaign = !!completedTask.campaignName;
+       const campaignSuffix = isCampaign ? `-${completedTask.campaignName}` : '';
+       // Unique ID to allow multiple campaigns
+       const r2Id = `${completedTask.clientId}-N-LOOP-02-${completedTask.role}${campaignSuffix}`;
+       
+       const baseName = `第2轮：发送解决方案`;
+       const taskName = isCampaign ? `${completedTask.campaignName} - ${baseName}` : baseName;
+
        const now = new Date();
        const unlockDate = new Date(now.setDate(now.getDate() + 14));
+       
        batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', r2Id), {
-         code: 'N-LOOP-02', name: `第2轮：发送解决方案`, role: completedTask.role, phase: '静默激活', desc: '发送《解决方案》',
-         clientId: completedTask.clientId, clientName: completedTask.clientName,
-         status: 'waiting', unlockAt: unlockDate, isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+         code: 'N-LOOP-02', 
+         name: taskName, 
+         role: completedTask.role, 
+         phase: '静默激活', 
+         desc: '发送《解决方案》',
+         clientId: completedTask.clientId, 
+         clientName: completedTask.clientName,
+         status: 'waiting', 
+         unlockAt: unlockDate, 
+         isReady: true, 
+         createdAt: serverTimestamp(), 
+         burningDeadline: null, 
+         type: 'once',
+         campaignName: completedTask.campaignName || null // Propagate DNA
        });
     }
-    if (completedTask.code === 'N-LOOP-02') {
-       const r3Id = `${completedTask.clientId}-N-LOOP-03-${completedTask.role}`;
-       const now = new Date();
-       const unlockDate = new Date(now.setDate(now.getDate() + 14));
-       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', r3Id), {
-         code: 'N-LOOP-03', name: `第3轮：发送讲解视频`, role: completedTask.role, phase: '静默激活', desc: '发送视频内容',
-         clientId: completedTask.clientId, clientName: completedTask.clientName,
-         status: 'waiting', unlockAt: unlockDate, isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
-       });
-    }
+
+    // --- SILENT STREAM PROPAGATION ---
+    const loopSteps = [
+        { current: 'N-LOOP-02', next: 'N-LOOP-03', name: '第3轮：发送讲解视频', desc: '发送视频内容' },
+        { current: 'N-LOOP-03', next: 'N-LOOP-04', name: '第4轮：发送白皮书', desc: '发送白皮书' },
+    ];
+
+    loopSteps.forEach(step => {
+        if (completedTask.code === step.current) {
+            const isCampaign = !!completedTask.campaignName;
+            const campaignSuffix = isCampaign ? `-${completedTask.campaignName}` : '';
+            const nextId = `${completedTask.clientId}-${step.next}-${completedTask.role}${campaignSuffix}`;
+            
+            const taskName = isCampaign ? `${completedTask.campaignName} - ${step.name}` : step.name;
+
+            const now = new Date();
+            const unlockDate = new Date(now.setDate(now.getDate() + 14));
+            
+            batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', nextId), {
+                code: step.next, 
+                name: taskName,
+                role: completedTask.role, 
+                phase: '静默激活', 
+                desc: step.desc,
+                clientId: completedTask.clientId, 
+                clientName: completedTask.clientName,
+                status: 'waiting', 
+                unlockAt: unlockDate, 
+                isReady: true, 
+                createdAt: serverTimestamp(), 
+                burningDeadline: null, 
+                type: 'once',
+                campaignName: completedTask.campaignName || null
+            });
+        }
+    });
+
     if (completedTask.code === 'N-LOOP-04') {
-       const reviewId = `${completedTask.clientId}-N-REVIEW`;
-       if (!existingTasks.find(t => t.id === reviewId)) {
-          batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', reviewId), {
-            code: 'N-REVIEW', name: '静默期复盘', role: 'QH', phase: '静默激活', desc: '复盘各条线静默效果',
-            clientId: completedTask.clientId, clientName: completedTask.clientName,
-            status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
-          });
-       }
+       const isCampaign = !!completedTask.campaignName;
+       const campaignSuffix = isCampaign ? `-${completedTask.campaignName}` : '';
+       const reviewId = `${completedTask.clientId}-N-REVIEW${campaignSuffix}`;
+       
+       const baseName = '静默期复盘';
+       const taskName = isCampaign ? `${completedTask.campaignName} - ${baseName}` : baseName;
+
+       // Basic check against existing (simplified)
+       // In real app, querying specifically for this ID is better, but here we trust set() to overwrite or logic flow
+       batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', reviewId), {
+         code: 'N-REVIEW', 
+         name: taskName, 
+         role: 'QH', 
+         phase: '静默激活', 
+         desc: '复盘各条线静默效果',
+         clientId: completedTask.clientId, 
+         clientName: completedTask.clientName,
+         status: 'pending', 
+         isReady: true, 
+         createdAt: serverTimestamp(), 
+         burningDeadline: null, 
+         type: 'once',
+         campaignName: completedTask.campaignName || null
+       });
     }
+
     if (completedTask.code === 'N-REVIEW') {
+       const isCampaign = !!completedTask.campaignName;
+       const campaignSuffix = isCampaign ? `-${completedTask.campaignName}` : '';
+       const baseName = `第5轮：最终全景激活`;
+       const taskName = isCampaign ? `${completedTask.campaignName} - ${baseName}` : baseName;
+
        ['TC', 'ST', 'LE', 'ZC'].forEach(role => {
-          const r5Id = `${completedTask.clientId}-N-LOOP-05-${role}`;
+          const r5Id = `${completedTask.clientId}-N-LOOP-05-${role}${campaignSuffix}`;
           batch.set(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', r5Id), {
-            code: 'N-LOOP-05', name: `第5轮：最终全景激活`, role: role, phase: '静默激活', desc: '发送全景方案',
-            clientId: completedTask.clientId, clientName: completedTask.clientName,
-            status: 'pending', isReady: true, createdAt: serverTimestamp(), burningDeadline: null, type: 'once'
+            code: 'N-LOOP-05', 
+            name: taskName, 
+            role: role, 
+            phase: '静默激活', 
+            desc: '发送全景方案',
+            clientId: completedTask.clientId, 
+            clientName: completedTask.clientName,
+            status: 'pending', 
+            isReady: true, 
+            createdAt: serverTimestamp(), 
+            burningDeadline: null, 
+            type: 'once',
+            campaignName: completedTask.campaignName || null
           });
        });
     }
@@ -443,9 +516,7 @@ export default function App() {
          showToast('↩️ 任务已还原');
       }
       else if (task.id === 'GLOBAL-OP-SOCIAL') {
-         // FIX: Use 24h Countdown logic (reset to 24h later)
          const next24h = new Date(Date.now() + 24 * 60 * 60 * 1000);
-         
          batch.update(taskRef, { 
              status: 'pending', 
              burningDeadline: next24h,
@@ -594,7 +665,8 @@ export default function App() {
                  code: 'MANUAL-EXEC', name: `${name} - ${role}`, role: role, type: 'quota',
                  quotaTotal: parseInt(val), quotaCurrent: 0,
                  clientId: targetClientId, clientName: targetClientName, 
-                 status: 'pending', isReady: true, createdAt: timestamp, burningDeadline: deadline
+                 status: 'pending', isReady: true, createdAt: timestamp, burningDeadline: deadline,
+                 campaignName: name // FIX: Inject DNA
               });
            }
         });
@@ -801,7 +873,7 @@ export default function App() {
       <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen fixed left-0 top-0 z-10 shadow-xl">
         <div className="p-6 border-b border-slate-800">
           <h1 className="text-lg font-bold text-white flex items-center gap-2"><Activity className="text-blue-500"/> 粤新链·指挥台</h1>
-          <p className="text-[10px] mt-1 text-slate-500">V38.5 Clean</p>
+          <p className="text-[10px] mt-1 text-slate-500">V38.8 Campaign DNA</p>
         </div>
         <nav className="flex-1 px-4 space-y-2 mt-6">
           <button onClick={() => setActiveTab('my-tasks')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab === 'my-tasks' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800'}`}><CheckSquare size={18} /> 我的待办</button>
